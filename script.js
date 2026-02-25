@@ -1,13 +1,13 @@
 let stateData = [];
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
 
-    // ✅ Load JSON data
+    // ✅ Load JSON file
     fetch("state_data.json")
         .then(response => response.json())
         .then(data => {
             stateData = data;
-            enableMapInteraction();
+            enableMap();
         })
         .catch(error => {
             console.error("Error loading JSON:", error);
@@ -15,53 +15,58 @@ document.addEventListener("DOMContentLoaded", function() {
 
 });
 
-function enableMapInteraction() {
+function enableMap() {
 
-    // ✅ Click for real states
-    const states = document.querySelectorAll("#india_states path");
+    // ✅ Select all state paths inside your SVG group
+    const states = document.querySelectorAll("#features path");
 
     states.forEach(state => {
-        state.addEventListener("click", function() {
-            handleStateClick(this.id);
+        state.addEventListener("click", function () {
+            handleClick(this.id);
         });
     });
 
-    // ✅ Click for markers
+    // ✅ Handle markers (if you added circles with _marker)
     const markers = document.querySelectorAll("[id$='_marker']");
 
     markers.forEach(marker => {
-        marker.addEventListener("click", function() {
-
+        marker.addEventListener("click", function () {
             const realId = this.id.replace("_marker", "");
-            handleStateClick(realId);
-
+            handleClick(realId);
         });
     });
+
 }
 
-function handleStateClick(stateId) {
+function handleClick(stateId) {
 
     resetColors();
 
     const stateElement = document.getElementById(stateId);
 
     if (stateElement) {
-        stateElement.style.fill = "#4A90E2";
+        stateElement.style.fill = "#4A90E2"; // highlight color
     }
 
-    // ✅ Find data from JSON
+    // ✅ Find state in JSON
     const stateInfo = stateData.find(item => item.id === stateId);
 
     if (stateInfo) {
         document.getElementById("stateName").textContent = stateInfo.name;
         document.getElementById("capitalName").textContent =
             "Capital: " + stateInfo.capital;
+    } else {
+        document.getElementById("stateName").textContent = stateId;
+        document.getElementById("capitalName").textContent = "";
     }
 }
 
 function resetColors() {
-    document.querySelectorAll("#india_states path")
-        .forEach(state => {
-            state.style.fill = "#E0E0E0";
-        });
+
+    const states = document.querySelectorAll("#features path");
+
+    states.forEach(state => {
+        state.style.fill = "#E0E0E0"; // default map color
+    });
+
 }
