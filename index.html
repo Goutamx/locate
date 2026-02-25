@@ -1,171 +1,601 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>India Map Pro</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>India Geography Explorer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🇮🇳</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ======== THEME VARIABLES ======== */
+    :root {
+      --bg-primary: #f0f4f8;
+      --bg-card: #ffffff;
+      --bg-card-alt: #f8fafc;
+      --text-heading: #0f172a;
+      --text-body: #475569;
+      --text-muted: #94a3b8;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --accent-text: #3730a3;
+      --success: #059669;
+      --success-light: #d1fae5;
+      --success-text: #065f46;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --danger-text: #991b1b;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --border: #e2e8f0;
+      --border-focus: #a5b4fc;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --map-default: #dbeafe;
+      --map-hover: #93c5fd;
+      --map-stroke: #60a5fa;
+      --map-stroke-width: 0.5;
+      --map-selected: #3b82f6;
+      --map-correct: #10b981;
+      --map-wrong: #ef4444;
+      --map-marker: #f59e0b;
+      --map-marker-stroke: #d97706;
+      --radius: 12px;
+    }
 
-<style>
-:root {
-  --bg: #f4f6f9;
-  --text: #222;
-  --primary: #4A90E2;
-  --correct: #2ECC71;
-  --wrong: #E74C3C;
-  --default: #E0E0E0;
-}
+    html.dark {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-alt: #1a2332;
+      --text-heading: #f1f5f9;
+      --text-body: #cbd5e1;
+      --text-muted: #64748b;
+      --accent: #818cf8;
+      --accent-hover: #a5b4fc;
+      --accent-light: #1e1b4b;
+      --accent-text: #c7d2fe;
+      --success-light: #064e3b;
+      --success-text: #6ee7b7;
+      --danger-light: #450a0a;
+      --danger-text: #fca5a5;
+      --warning-light: #451a03;
+      --border: #334155;
+      --border-focus: #6366f1;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+      --map-default: #1e3a5f;
+      --map-hover: #2563eb;
+      --map-stroke: #3b82f6;
+      --map-selected: #60a5fa;
+      --map-correct: #10b981;
+      --map-wrong: #ef4444;
+      --map-marker: #fbbf24;
+      --map-marker-stroke: #f59e0b;
+    }
 
-body.dark {
-  --bg: #1e1e1e;
-  --text: #ffffff;
-}
+    /* ======== BASE STYLES ======== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  text-align: center;
-}
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
 
-header {
-  padding: 10px;
-}
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-body);
+      transition: background-color 0.35s ease, color 0.35s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
 
-button, select {
-  padding: 6px 12px;
-  margin: 4px;
-  cursor: pointer;
-}
+    /* ======== SCROLLBAR ======== */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-body); }
 
-#loading {
-  position: fixed;
-  inset: 0;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  z-index: 1000;
-}
+    /* ======== HEADER ======== */
+    .app-header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      z-index: 50;
+      transition: background-color 0.35s ease, border-color 0.35s ease;
+    }
 
-svg {
-  width: 90%;
-  max-width: 900px;
-}
+    .logo-text {
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--text-heading);
+      letter-spacing: -0.02em;
+    }
 
-#features path {
-  transition: fill 0.3s ease;
-  cursor: pointer;
-}
+    @media (min-width: 640px) {
+      .logo-text { font-size: 1.15rem; }
+    }
 
-.pulse {
-  animation: pulse 0.4s;
-}
+    /* ======== BUTTONS ======== */
+    .mode-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-body);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    @media (min-width: 640px) {
+      .mode-btn { padding: 7px 16px; gap: 6px; font-size: 0.85rem; }
+    }
+    .mode-btn:hover { background: var(--bg-card-alt); border-color: var(--accent); color: var(--accent); }
+    .mode-btn.active {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    }
 
-.shake {
-  animation: shake 0.4s;
-}
+    .icon-btn {
+      width: 34px; height: 34px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    @media (min-width: 640px) {
+      .icon-btn { width: 38px; height: 38px; font-size: 1.1rem; }
+    }
+    .icon-btn:hover { background: var(--bg-card-alt); border-color: var(--accent); transform: scale(1.05); }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.06); }
-  100% { transform: scale(1); }
-}
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 24px;
+      background: var(--accent);
+      color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 0.9rem; font-weight: 600; font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+    }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79,70,229,0.4); }
+    .btn-primary:active { transform: translateY(0); }
 
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-3px); }
-  50% { transform: translateX(3px); }
-  75% { transform: translateX(-3px); }
-  100% { transform: translateX(0); }
-}
+    .btn-secondary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 18px;
+      background: var(--bg-card-alt);
+      color: var(--text-heading);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 0.85rem; font-weight: 600; font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 
-#progressBar, #timerBar {
-  width: 80%;
-  height: 10px;
-  margin: 8px auto;
-  background: #ddd;
-}
+    .zoom-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 1rem; font-weight: 600;
+      color: var(--text-heading);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow);
+      user-select: none;
+    }
+    @media (min-width: 640px) {
+      .zoom-btn { width: 36px; height: 36px; font-size: 1.1rem; }
+    }
+    .zoom-btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+    .zoom-btn:active { transform: scale(0.95); }
 
-#progressFill {
-  height: 100%;
-  width: 0%;
-  background: var(--primary);
-}
+    /* ======== MAP ======== */
+    .map-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      transition: background-color 0.35s ease, border-color 0.35s ease;
+    }
 
-#timerFill {
-  height: 100%;
-  width: 100%;
-  background: var(--correct);
-  transition: width 1s linear;
-}
+    #map-container {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-overflow-scrolling: touch;
+    }
 
-#progressDots span {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ccc;
-  margin: 3px;
-}
+    #map-container svg {
+      width: 100%;
+      height: auto;
+      max-height: 100%;
+      display: block;
+      transition: transform 0.3s ease;
+      transform-origin: center center;
+    }
 
-#progressDots .done {
-  background: var(--primary);
-}
+    /* State/UT Paths */
+    .geo-path {
+      fill: var(--map-default) !important;
+      stroke: var(--map-stroke) !important;
+      stroke-width: var(--map-stroke-width) !important;
+      cursor: pointer;
+      transition: fill 0.25s ease, stroke-width 0.2s ease, opacity 0.2s ease;
+      touch-action: manipulation;
+    }
+    .geo-path:hover {
+      fill: var(--map-hover) !important;
+      stroke-width: 1px !important;
+    }
+    .geo-path.selected {
+      fill: var(--map-selected) !important;
+      stroke-width: 1.5px !important;
+      filter: drop-shadow(0 0 6px rgba(59,130,246,0.5));
+    }
+    .geo-path.correct {
+      fill: var(--map-correct) !important;
+      stroke-width: 1.5px !important;
+    }
+    .geo-path.wrong {
+      fill: var(--map-wrong) !important;
+      stroke-width: 1.5px !important;
+    }
+    .geo-path.dimmed {
+      opacity: 0.4;
+    }
 
-.hidden {
-  display: none;
-}
+    /* Marker Circles (for small islands/UTs) */
+    .geo-marker {
+      fill: var(--map-marker) !important;
+      stroke: var(--map-marker-stroke) !important;
+      stroke-width: 2px !important;
+      cursor: pointer;
+      pointer-events: auto !important;
+    }
+    .geo-marker:hover {
+      fill: var(--map-hover) !important;
+      stroke: var(--accent) !important;
+      stroke-width: 3px !important;
+      filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
+    }
+    .geo-marker.selected {
+      fill: var(--map-selected) !important;
+      stroke: var(--accent) !important;
+      stroke-width: 3px !important;
+      filter: drop-shadow(0 0 8px rgba(59,130,246,0.6));
+    }
+    .geo-marker.correct {
+      fill: var(--map-correct) !important;
+      stroke: var(--success) !important;
+    }
+    .geo-marker.wrong {
+      fill: var(--map-wrong) !important;
+      stroke: var(--danger) !important;
+    }
 
-.tooltip {
-  position: fixed;
-  background: black;
-  color: white;
-  padding: 4px 6px;
-  font-size: 12px;
-  border-radius: 4px;
-  pointer-events: none;
-  display: none;
-}
-</style>
+    /* ======== SIDEBAR ======== */
+    .sidebar {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      transition: background-color 0.35s ease, border-color 0.35s ease;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    @media (min-width: 768px) {
+      .sidebar {
+        border-top: none;
+        border-left: 1px solid var(--border);
+      }
+    }
+
+    /* ======== INFO CARD ======== */
+    .info-card {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: background-color 0.35s ease, border-color 0.35s ease;
+    }
+    @media (min-width: 640px) {
+      .info-card { padding: 20px; }
+    }
+
+    .info-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row-icon { font-size: 1.3rem; flex-shrink: 0; }
+    @media (min-width: 640px) {
+      .info-row-icon { font-size: 1.4rem; }
+    }
+    .info-row-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; }
+    @media (min-width: 640px) {
+      .info-row-label { font-size: 0.7rem; }
+    }
+    .info-row-value { font-size: 0.9rem; font-weight: 600; color: var(--text-heading); }
+    @media (min-width: 640px) {
+      .info-row-value { font-size: 0.95rem; }
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    @media (min-width: 640px) {
+      .type-badge { font-size: 0.7rem; }
+    }
+    .badge-state { background: var(--accent-light); color: var(--accent-text); }
+    .badge-ut { background: var(--warning-light); color: var(--warning); }
+
+    /* ======== QUIZ ======== */
+    .question-card {
+      background: var(--accent-light);
+      border: 1.5px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    @media (min-width: 640px) {
+      .question-card { padding: 20px; }
+    }
+    .question-card p {
+      color: var(--accent-text);
+      line-height: 1.5;
+    }
+    .question-card strong {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .timer-bar-track {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--success);
+      transition: width 1s linear, background-color 0.5s ease;
+    }
+
+    .feedback-card {
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    @media (min-width: 640px) {
+      .feedback-card { padding: 14px 16px; font-size: 0.85rem; }
+    }
+    .feedback-correct { background: var(--success-light); color: var(--success-text); border: 1px solid var(--success); }
+    .feedback-wrong { background: var(--danger-light); color: var(--danger-text); border: 1px solid var(--danger); }
+
+    /* Progress Dots - NO ANIMATION */
+    .progress-dot {
+      width: 10px; 
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .dot-current { 
+      background: var(--accent); 
+    }
+    .dot-correct { 
+      background: var(--success); 
+    }
+    .dot-wrong { 
+      background: var(--danger); 
+    }
+
+    /* Score Display */
+    .score-ring {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      border: 4px solid var(--border);
+      position: relative;
+    }
+    @media (min-width: 640px) {
+      .score-ring { width: 120px; height: 120px; }
+    }
+    .score-ring::after {
+      content: '';
+      position: absolute; inset: -4px;
+      border-radius: 50%;
+      border: 4px solid transparent;
+      border-top-color: var(--accent);
+      border-right-color: var(--accent);
+    }
+
+    /* Result Items */
+    .result-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      font-size: 0.78rem;
+      transition: background 0.2s;
+    }
+    @media (min-width: 640px) {
+      .result-item { gap: 10px; padding: 8px 12px; font-size: 0.82rem; }
+    }
+    .result-item:hover { background: var(--bg-card-alt); }
+    .result-num {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--bg-card-alt);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    @media (min-width: 640px) {
+      .result-num { width: 22px; height: 22px; font-size: 0.7rem; }
+    }
+    .result-name { flex: 1; font-weight: 600; color: var(--text-heading); }
+    .result-time { font-size: 0.7rem; color: var(--text-muted); }
+    @media (min-width: 640px) {
+      .result-time { font-size: 0.75rem; }
+    }
+
+    /* ======== TOOLTIP ======== */
+    .map-tooltip {
+      position: fixed;
+      padding: 6px 12px;
+      background: var(--text-heading);
+      color: var(--bg-card);
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 6px;
+      pointer-events: none;
+      z-index: 200;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    @media (min-width: 640px) {
+      .map-tooltip { font-size: 0.78rem; }
+    }
+
+    /* ======== SVG PLACEHOLDER ======== */
+    .svg-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 30px 15px; text-align: center; min-height: 250px;
+    }
+    @media (min-width: 640px) {
+      .svg-placeholder { padding: 40px 20px; min-height: 300px; }
+    }
+    .svg-placeholder p { color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; }
+    @media (min-width: 640px) {
+      .svg-placeholder p { font-size: 0.9rem; }
+    }
+
+    /* ======== CONFETTI ======== */
+    .confetti-piece {
+      position: fixed;
+      width: 10px; height: 10px;
+      top: -20px;
+      z-index: 600;
+      border-radius: 2px;
+      animation: confetti-fall linear forwards;
+    }
+
+    /* ======== ANIMATIONS ======== */
+    @keyframes anim-fade-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+
+    .anim-fade-in { animation: anim-fade-in 0.3s ease-out both; }
+
+    /* ======== MOBILE LAYOUT ======== */
+    @media (max-width: 767px) {
+      .app-container {
+        flex-direction: column !important;
+      }
+      .map-section {
+        flex: 1 1 55% !important;
+        min-height: 0 !important;
+        max-height: 55vh !important;
+      }
+      .sidebar {
+        flex: 1 1 45% !important;
+        min-height: 0 !important;
+        max-height: 45vh !important;
+      }
+    }
+
+    /* ======== TABLET & DESKTOP ======== */
+    @media (min-width: 768px) {
+      .app-container {
+        flex-direction: row !important;
+      }
+      .map-section {
+        flex: 1 !important;
+        max-height: none !important;
+      }
+      .sidebar {
+        width: 320px !important;
+        flex-shrink: 0 !important;
+        max-height: none !important;
+      }
+    }
+    @media (min-width: 1024px) {
+      .sidebar {
+        width: 380px !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div id="app" class="flex flex-col h-full overflow-hidden">
 
-<div id="loading">Loading...</div>
+    <!-- ====== HEADER ====== -->
+    <header class="app-header flex items-center justify-between px-2 sm:px-4 md:px-6 py-2 shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="text-lg sm:text-xl md:text-2xl">🇮🇳</span>
+        <span class="logo-text">India Explorer</span>
+      </div>
+      <nav class="flex items-center gap-1">
+        <button id="btn-learn" class="mode-btn active" onclick="App.switchMode('learn')">
+          <span>📖</span><span class="hidden xs:inline">Learn</span>
+        </button>
+        <button id="btn-quiz" class="mode-btn" onclick="App.switchMode('quiz')">
+          <span>🧠</span><span class="hidden xs:inline">Quiz</span>
+        </button>
+      </nav>
+      <div class="flex items-center gap-1">
+        <button class="icon-btn" onclick="App.toggleDark()" id="dark-btn" title="Toggle theme">🌙</button>
+      </div>
+    </header>
 
-<header>
-  <h1>India Map Pro</h1>
-  <button id="darkBtn">🌙</button>
-</header>
+    <!-- ====== MAIN CONTENT ====== -->
+    <main class="app-container flex flex-1 min-h-0 overflow-hidden">
 
-<div>
-  <button data-mode="learning">Learning</button>
-  <button data-mode="quiz">Quiz</button>
-  <select id="difficulty">
-    <option value="easy">Easy</option>
-    <option value="medium">Medium</option>
-    <option value="hard">Hard</option>
-  </select>
-</div>
+      <!-- MAP SECTION -->
+      <section class="map-section relative p-2 md:p-3 flex flex-col min-h-0">
+        <div class="map-wrap flex-1 min-h-0">
+          <div id="map-container">
 
-<div id="progressBar"><div id="progressFill"></div></div>
-<div id="timerBar"><div id="timerFill"></div></div>
-<div id="progressDots"></div>
-
-<h2 id="question">Select Mode</h2>
-<div id="info"></div>
-
-<div id="summary" class="hidden">
-  <h2>Quiz Finished 🎉</h2>
-  <div id="summaryText"></div>
-  <button id="reviewBtn">Review Mistakes</button>
-</div>
-
-<div class="tooltip" id="tooltip"></div>
-
-<!-- ✅ PASTE YOUR SVG HERE -->
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+            <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--********* Copyright (c) 2024 Pareto Softare, LLC DBA Simplemaps.com ***************************************
 ************* Free for Commercial Use, full terms at  https://simplemaps.com/resources/svg-license ************
 ************* Attribution is appreciated! https://simplemaps.com *******************************************-->
@@ -657,213 +1087,959 @@ svg {
   </g>
 </svg>
 
-<script>
-const CONFIG = {
-  MAX_QUESTIONS: 10,
-  TIMER: 10
-};
 
-const AppState = {
-  mode: "learning",
-  score: 0,
-  questionIndex: 0,
-  used: new Set(),
-  current: null,
-  history: [],
-  data: [],
-  timerRef: null,
-  timeLeft: 0
-};
+          </div>
+        </div>
+        <!-- Zoom Controls -->
+        <div class="absolute bottom-3 right-3 md:bottom-5 md:right-5 flex flex-col gap-1 z-10">
+          <button class="zoom-btn" onclick="App.zoomIn()" title="Zoom in">+</button>
+          <button class="zoom-btn" onclick="App.zoomOut()" title="Zoom out">−</button>
+          <button class="zoom-btn text-xs sm:text-sm" onclick="App.resetZoom()" title="Reset zoom">⟲</button>
+        </div>
+      </section>
 
-init();
+      <!-- SIDEBAR -->
+      <aside class="sidebar p-2 sm:p-3 md:p-4">
 
-async function init() {
-  try {
-    const res = await fetch("state_data.json");
-    if (!res.ok) throw new Error("Data load failed");
-    AppState.data = await res.json();
-  } catch (e) {
-    alert("Failed to load data.");
-  }
+        <!-- LEARNING PANEL -->
+        <div id="learn-panel">
+          <div id="learn-placeholder" class="text-center py-4 sm:py-6">
+            <div class="text-3xl sm:text-4xl mb-2 sm:mb-3">🗺️</div>
+            <h2 class="text-sm sm:text-base font-bold mb-1" style="color:var(--text-heading)">Explore India</h2>
+            <p class="text-xs sm:text-sm" style="color:var(--text-muted)">Click on any state or union territory to learn about it</p>
+            <div class="mt-3 sm:mt-4 flex flex-wrap gap-2 justify-center">
+              <span class="type-badge badge-state">28 States</span>
+              <span class="type-badge badge-ut">8 Union Territories</span>
+            </div>
+          </div>
+          <div id="state-info" class="hidden"></div>
+        </div>
 
-  document.getElementById("loading").style.display = "none";
-  setupEvents();
-}
+        <!-- QUIZ PANEL -->
+        <div id="quiz-panel" class="hidden">
 
-function setupEvents() {
+          <!-- Quiz Start -->
+          <div id="quiz-start" class="text-center py-3 sm:py-4">
+            <div class="text-3xl sm:text-4xl mb-2 sm:mb-3">🧠</div>
+            <h2 class="text-sm sm:text-base font-bold mb-1" style="color:var(--text-heading)">Test Your Knowledge</h2>
+            <p class="text-xs sm:text-sm mb-4 sm:mb-5" style="color:var(--text-muted)">10 questions · 10 seconds each</p>
+            <div class="flex flex-col gap-1.5 sm:gap-2 text-left mb-4 sm:mb-5 px-1 sm:px-2">
+              <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm"><span>🎯</span><span style="color:var(--text-body)">Locate states by name</span></div>
+              <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm"><span>🏛️</span><span style="color:var(--text-body)">Identify states by capital</span></div>
+              <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm"><span>🌊</span><span style="color:var(--text-body)">Find states by sea/ocean</span></div>
+              <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm"><span>🌍</span><span style="color:var(--text-body)">Find states by country border</span></div>
+              <div class="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm"><span>⏱️</span><span style="color:var(--text-body)">Beat the 10-second timer</span></div>
+            </div>
+            <button class="btn-primary w-full text-sm sm:text-base" onclick="App.startQuiz()">🚀 Start Quiz</button>
+          </div>
 
-  document.body.addEventListener("click", e => {
-    if (e.target.dataset.mode) {
-      AppState.mode = e.target.dataset.mode;
-      if (AppState.mode === "quiz") startQuiz();
-      else resetLearning();
-    }
-  });
+          <!-- Quiz Active -->
+          <div id="quiz-active" class="hidden">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold" style="color:var(--text-muted)">Q <span id="q-num" class="text-sm" style="color:var(--text-heading)">1</span>/10</span>
+              <span class="text-xs font-semibold" style="color:var(--text-muted)">SCORE <span id="q-score" class="text-sm" style="color:var(--accent)">0</span></span>
+            </div>
+            <div id="progress-dots" class="flex gap-1 sm:gap-1.5 justify-center mb-3 sm:mb-4 flex-wrap"></div>
+            <div class="timer-bar-track mb-2 sm:mb-3"><div id="timer-bar" class="timer-bar"></div></div>
+            <div class="flex items-center justify-center gap-2 mb-3 sm:mb-4">
+              <span id="timer-icon" class="text-base sm:text-lg">⏱️</span>
+              <span id="timer-text" class="text-xl sm:text-2xl font-extrabold" style="color:var(--text-heading)">10</span>
+              <span class="text-xs font-medium" style="color:var(--text-muted)">sec</span>
+            </div>
+            <div id="quiz-question" class="question-card mb-3 sm:mb-4">
+              <p id="q-text" class="text-center text-xs sm:text-sm font-semibold"></p>
+            </div>
+            <div id="quiz-feedback" class="hidden feedback-card anim-fade-in"></div>
+          </div>
 
-  document.getElementById("darkBtn").onclick = () =>
-    document.body.classList.toggle("dark");
+          <!-- Quiz Results -->
+          <div id="quiz-results" class="hidden">
+            <div class="text-center py-2">
+              <div id="res-emoji" class="text-4xl sm:text-5xl mb-2"></div>
+              <h2 id="res-title" class="text-base sm:text-lg font-bold" style="color:var(--text-heading)"></h2>
+              <p id="res-subtitle" class="text-xs sm:text-sm mb-3 sm:mb-4" style="color:var(--text-muted)"></p>
+              <div class="score-ring mb-3 sm:mb-4">
+                <span id="res-score" class="text-2xl sm:text-3xl font-extrabold" style="color:var(--accent)"></span>
+                <span class="text-xs font-semibold" style="color:var(--text-muted)">/10</span>
+              </div>
+            </div>
+            <div id="results-breakdown" class="mb-3 sm:mb-4 max-h-36 sm:max-h-48 overflow-y-auto"></div>
+            <div class="flex gap-2">
+              <button class="btn-secondary flex-1 text-xs sm:text-sm" onclick="App.startQuiz()">🔄 Retry</button>
+              <button class="btn-secondary flex-1 text-xs sm:text-sm" onclick="App.switchMode('learn')">📖 Learn</button>
+            </div>
+          </div>
+        </div>
 
-  document.getElementById("difficulty").onchange =
-    e => AppState.difficulty = e.target.value;
+      </aside>
+    </main>
 
-  document.getElementById("reviewBtn").onclick = reviewMistakes;
+    <!-- TOOLTIP -->
+    <div id="tooltip" class="map-tooltip hidden"></div>
+  </div>
 
-  document.querySelector("#features")?.addEventListener("click", e => {
-    if (e.target.tagName !== "path") return;
-    handleClick(e.target.id);
-  });
+  <!-- ====== APPLICATION SCRIPT ====== -->
+  <script>
+    const App = (() => {
 
-  document.querySelector("#features")?.addEventListener("mousemove", e => {
-    if (AppState.mode !== "learning") return;
-    const state = AppState.data.find(s => s.id === e.target.id);
-    if (!state) return;
-    const tip = document.getElementById("tooltip");
-    tip.style.display = "block";
-    tip.textContent = state.name;
-    tip.style.left = e.pageX + 10 + "px";
-    tip.style.top = e.pageY + 10 + "px";
-  });
+      // ─── CONFIG ──────────────────────────────────────────
+      const CFG = {
+        MAX_Q: 10,
+        TIMER: 10,
+        FEEDBACK_MS: 1800,
+        DARK_STORAGE: 'india-geo-dark',
+      };
 
-  document.querySelector("#features")?.addEventListener("mouseleave", () => {
-    document.getElementById("tooltip").style.display = "none";
-  });
-}
+      // ─── EMBEDDED STATE DATA ─────────────────────────────
+      const STATES_DATA = [
+        { id:"andhra_pradesh", name:"Andhra Pradesh", capital:"Amaravati", type:"State" },
+        { id:"arunachal_pradesh", name:"Arunachal Pradesh", capital:"Itanagar", type:"State" },
+        { id:"assam", name:"Assam", capital:"Dispur", type:"State" },
+        { id:"bihar", name:"Bihar", capital:"Patna", type:"State" },
+        { id:"chhattisgarh", name:"Chhattisgarh", capital:"Raipur", type:"State" },
+        { id:"goa", name:"Goa", capital:"Panaji", type:"State" },
+        { id:"gujarat", name:"Gujarat", capital:"Gandhinagar", type:"State" },
+        { id:"haryana", name:"Haryana", capital:"Chandigarh", type:"State" },
+        { id:"himachal_pradesh", name:"Himachal Pradesh", capital:"Shimla", type:"State" },
+        { id:"jharkhand", name:"Jharkhand", capital:"Ranchi", type:"State" },
+        { id:"karnataka", name:"Karnataka", capital:"Bengaluru", type:"State" },
+        { id:"kerala", name:"Kerala", capital:"Thiruvananthapuram", type:"State" },
+        { id:"madhya_pradesh", name:"Madhya Pradesh", capital:"Bhopal", type:"State" },
+        { id:"maharashtra", name:"Maharashtra", capital:"Mumbai", type:"State" },
+        { id:"manipur", name:"Manipur", capital:"Imphal", type:"State" },
+        { id:"meghalaya", name:"Meghalaya", capital:"Shillong", type:"State" },
+        { id:"mizoram", name:"Mizoram", capital:"Aizawl", type:"State" },
+        { id:"nagaland", name:"Nagaland", capital:"Kohima", type:"State" },
+        { id:"odisha", name:"Odisha", capital:"Bhubaneswar", type:"State" },
+        { id:"punjab", name:"Punjab", capital:"Chandigarh", type:"State" },
+        { id:"rajasthan", name:"Rajasthan", capital:"Jaipur", type:"State" },
+        { id:"sikkim", name:"Sikkim", capital:"Gangtok", type:"State" },
+        { id:"tamil_nadu", name:"Tamil Nadu", capital:"Chennai", type:"State" },
+        { id:"telangana", name:"Telangana", capital:"Hyderabad", type:"State" },
+        { id:"tripura", name:"Tripura", capital:"Agartala", type:"State" },
+        { id:"uttar_pradesh", name:"Uttar Pradesh", capital:"Lucknow", type:"State" },
+        { id:"uttarakhand", name:"Uttarakhand", capital:"Dehradun", type:"State" },
+        { id:"west_bengal", name:"West Bengal", capital:"Kolkata", type:"State" },
+        { id:"andaman_and_nicobar_islands", name:"Andaman & Nicobar Islands", capital:"Port Blair", type:"Union Territory" },
+        { id:"chandigarh", name:"Chandigarh", capital:"Chandigarh", type:"Union Territory" },
+        { id:"dadra_and_nagar_haveli_and_daman_and_diu", name:"Dadra & Nagar Haveli and Daman & Diu", capital:"Daman", type:"Union Territory" },
+        { id:"delhi", name:"Delhi", capital:"New Delhi", type:"Union Territory" },
+        { id:"jammu_and_kashmir", name:"Jammu & Kashmir", capital:"Srinagar (Summer), Jammu (Winter)", type:"Union Territory" },
+        { id:"ladakh", name:"Ladakh", capital:"Leh", type:"Union Territory" },
+        { id:"lakshadweep", name:"Lakshadweep", capital:"Kavaratti", type:"Union Territory" },
+        { id:"puducherry", name:"Puducherry", capital:"Puducherry", type:"Union Territory" },
+      ];
 
-function resetMap() {
-  document.querySelectorAll("#features path")
-    .forEach(p => p.style.fill = "var(--default)");
-}
+      // ─── SPECIAL QUESTION DATA ───────────────────────────
+      
+      // Sea/Ocean boundaries - multiple correct answers
+      const SEA_BOUNDARIES = {
+        arabian_sea: {
+          question: "Which state/UT touches the <strong>Arabian Sea</strong>?",
+          answers: ["gujarat", "maharashtra", "goa", "karnataka", "kerala", "dadra_and_nagar_haveli_and_daman_and_diu", "lakshadweep"]
+        },
+        bay_of_bengal: {
+          question: "Which state/UT touches the <strong>Bay of Bengal</strong>?",
+          answers: ["west_bengal", "odisha", "andhra_pradesh", "tamil_nadu", "puducherry", "andaman_and_nicobar_islands"]
+        },
+        indian_ocean: {
+          question: "Which state touches the <strong>Indian Ocean</strong>?",
+          answers: ["tamil_nadu", "kerala"]
+        }
+      };
 
-function highlight(id, color, anim) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.style.fill = color;
-  if (anim) {
-    el.classList.add(anim);
-    setTimeout(() => el.classList.remove(anim), 400);
-  }
-}
+      // Country borders - multiple correct answers
+      const COUNTRY_BORDERS = {
+        china: {
+          question: "Which state/UT shares a border with <strong>China</strong>?",
+          answers: ["jammu_and_kashmir", "ladakh", "himachal_pradesh", "uttarakhand", "sikkim", "arunachal_pradesh"]
+        },
+        pakistan: {
+          question: "Which state/UT shares a border with <strong>Pakistan</strong>?",
+          answers: ["gujarat", "rajasthan", "punjab", "jammu_and_kashmir", "ladakh"]
+        },
+        nepal: {
+          question: "Which state shares a border with <strong>Nepal</strong>?",
+          answers: ["uttarakhand", "uttar_pradesh", "bihar", "west_bengal", "sikkim"]
+        },
+        bhutan: {
+          question: "Which state shares a border with <strong>Bhutan</strong>?",
+          answers: ["sikkim", "west_bengal", "assam", "arunachal_pradesh"]
+        },
+        bangladesh: {
+          question: "Which state shares a border with <strong>Bangladesh</strong>?",
+          answers: ["west_bengal", "assam", "meghalaya", "tripura", "mizoram"]
+        },
+        myanmar: {
+          question: "Which state shares a border with <strong>Myanmar</strong>?",
+          answers: ["arunachal_pradesh", "nagaland", "manipur", "mizoram"]
+        },
+        three_countries: {
+          question: "Which state shares borders with <strong>three countries</strong>?",
+          answers: ["sikkim"] // Nepal, Bhutan, China
+        },
+        two_countries: {
+          question: "Which state shares borders with <strong>two countries</strong>?",
+          answers: ["arunachal_pradesh", "west_bengal", "uttarakhand", "jammu_and_kashmir", "ladakh", "mizoram"]
+        }
+      };
 
-function resetLearning() {
-  clearInterval(AppState.timerRef);
-  AppState.mode = "learning";
-  resetMap();
-  document.getElementById("question").textContent = "Learning Mode";
-  document.getElementById("info").textContent = "";
-}
+      // Shared capitals - multiple correct answers
+      const SHARED_CAPITALS = {
+        chandigarh: {
+          question: "Which state has <strong>Chandigarh</strong> as its capital?",
+          answers: ["punjab", "haryana"]
+        }
+      };
 
-function startQuiz() {
-  AppState.score = 0;
-  AppState.questionIndex = 0;
-  AppState.used.clear();
-  AppState.history = [];
-  nextQuestion();
-}
+      // ─── ID ALIASES ──────────────────────────────────────
+      const ID_ALIASES = {};
+      (function buildAliases() {
+        const defs = [
+          ["andhra_pradesh",    ["IN-AP","AP","in-ap","ap","andhra-pradesh","andhrapradesh","Andhra_Pradesh","Andhra-Pradesh","AndhraPradesh","andhra"]],
+          ["arunachal_pradesh", ["IN-AR","AR","in-ar","ar","arunachal-pradesh","arunachalpradesh","Arunachal_Pradesh","Arunachal-Pradesh","ArunachalPradesh","arunachal"]],
+          ["assam",             ["IN-AS","AS","in-as","as","Assam"]],
+          ["bihar",             ["IN-BR","BR","in-br","br","Bihar"]],
+          ["chhattisgarh",      ["IN-CT","CT","in-ct","ct","chattisgarh","Chhattisgarh","Chattisgarh"]],
+          ["goa",               ["IN-GA","GA","in-ga","ga","Goa"]],
+          ["gujarat",           ["IN-GJ","GJ","in-gj","gj","Gujarat"]],
+          ["haryana",           ["IN-HR","HR","in-hr","hr","Haryana"]],
+          ["himachal_pradesh",  ["IN-HP","HP","in-hp","hp","himachal-pradesh","himachalpradesh","Himachal_Pradesh","Himachal-Pradesh","HimachalPradesh","himachal"]],
+          ["jharkhand",         ["IN-JH","JH","in-jh","jh","Jharkhand"]],
+          ["karnataka",         ["IN-KA","KA","in-ka","ka","Karnataka"]],
+          ["kerala",            ["IN-KL","KL","in-kl","kl","Kerala"]],
+          ["madhya_pradesh",    ["IN-MP","MP","in-mp","mp","madhya-pradesh","madhyapradesh","Madhya_Pradesh","Madhya-Pradesh","MadhyaPradesh","madhya"]],
+          ["maharashtra",       ["IN-MH","MH","in-mh","mh","Maharashtra"]],
+          ["manipur",           ["IN-MN","MN","in-mn","mn","Manipur"]],
+          ["meghalaya",         ["IN-ML","ML","in-ml","ml","Meghalaya"]],
+          ["mizoram",           ["IN-MZ","MZ","in-mz","mz","Mizoram"]],
+          ["nagaland",          ["IN-NL","NL","in-nl","nl","Nagaland"]],
+          ["odisha",            ["IN-OR","OR","in-or","or","IN-OD","OD","in-od","od","Odisha","orissa","Orissa"]],
+          ["punjab",            ["IN-PB","PB","in-pb","pb","Punjab"]],
+          ["rajasthan",         ["IN-RJ","RJ","in-rj","rj","Rajasthan"]],
+          ["sikkim",            ["IN-SK","SK","in-sk","sk","Sikkim"]],
+          ["tamil_nadu",        ["IN-TN","TN","in-tn","tn","tamil-nadu","tamilnadu","Tamil_Nadu","Tamil-Nadu","TamilNadu","tamil"]],
+          ["telangana",         ["IN-TG","TG","in-tg","tg","IN-TS","TS","in-ts","ts","Telangana"]],
+          ["tripura",           ["IN-TR","TR","in-tr","tr","Tripura"]],
+          ["uttar_pradesh",     ["IN-UP","UP","in-up","up","uttar-pradesh","uttarpradesh","Uttar_Pradesh","Uttar-Pradesh","UttarPradesh","uttar"]],
+          ["uttarakhand",       ["IN-UT","UT","in-ut","ut","IN-UK","UK","in-uk","uk","Uttarakhand","uttaranchal","Uttaranchal"]],
+          ["west_bengal",       ["IN-WB","WB","in-wb","wb","west-bengal","westbengal","West_Bengal","West-Bengal","WestBengal","west"]],
+          ["andaman_and_nicobar_islands",["IN-AN","AN","in-an","an","andaman-and-nicobar","andaman_and_nicobar","andaman","andaman-nicobar","andaman_nicobar","Andaman_and_Nicobar","Andaman-and-Nicobar","Andaman","andamanandnicobar","AndamanAndNicobar","andaman-and-nicobar-islands","andaman_and_nicobar_islands"]],
+          ["chandigarh",        ["IN-CH","CH","in-ch","ch","Chandigarh"]],
+          ["dadra_and_nagar_haveli_and_daman_and_diu",["IN-DH","DH","in-dh","dh","IN-DN","DN","in-dn","dn","IN-DD","DD","in-dd","dd","dadra","daman","dadra-nagar-haveli","dadra_nagar_haveli","daman-diu","daman_diu","dadra-nagar-haveli-daman-diu","dadra-and-nagar-haveli","Dadra","DadraNagarHaveli","DadraAndNagarHaveli","dnhdd","DNHDD","dadra_nagar_haveli_daman_diu"]],
+          ["delhi",             ["IN-DL","DL","in-dl","dl","Delhi","new-delhi","new_delhi","newdelhi","nct","NCT","nct-of-delhi"]],
+          ["jammu_and_kashmir", ["IN-JK","JK","in-jk","jk","jammu-and-kashmir","jammu","kashmir","jammu-kashmir","jammu_kashmir","Jammu_and_Kashmir","Jammu-and-Kashmir","JammuAndKashmir","JammuKashmir"]],
+          ["ladakh",            ["IN-LA","LA","in-la","la","Ladakh"]],
+          ["lakshadweep",       ["IN-LD","LD","in-ld","ld","Lakshadweep"]],
+          ["puducherry",        ["IN-PY","PY","in-py","py","Puducherry","pondicherry","Pondicherry"]],
+        ];
+        defs.forEach(([canonical, aliases]) => {
+          aliases.forEach(a => { ID_ALIASES[a] = canonical; });
+          ID_ALIASES[canonical] = canonical;
+        });
+      })();
 
-function nextQuestion() {
+      // ─── APP STATE ───────────────────────────────────────
+      const state = {
+        mode: 'learn',
+        data: [],
+        map: {},
+        svgIdMap: {},
+        markerMap: {},
+        matchedIds: new Set(),
+        selected: null,
+        dark: false,
+        zoom: 1,
+        quiz: {
+          active: false,
+          questions: [],
+          idx: 0,
+          score: 0,
+          timer: null,
+          timeLeft: CFG.TIMER,
+          answered: false,
+          history: [],
+        }
+      };
 
-  if (AppState.questionIndex >= CONFIG.MAX_QUESTIONS) {
-    showSummary();
-    return;
-  }
+      // ─── DOM CACHE ───────────────────────────────────────
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => document.querySelectorAll(sel);
 
-  resetMap();
-  AppState.questionIndex++;
+      // ─── INIT ────────────────────────────────────────────
+      async function init() {
+        state.data = await loadData();
+        state.data.forEach(s => state.map[s.id] = s);
+        initMap();
+        if (localStorage.getItem(CFG.DARK_STORAGE) === 'true') toggleDark();
+        document.addEventListener('keydown', onKey);
+        console.log(`%c🇮🇳 India Geography Explorer loaded — ${state.data.length} regions`, 'font-size:14px;font-weight:bold');
+      }
 
-  const available = AppState.data.filter(s => !AppState.used.has(s.id));
-  const state = available[Math.floor(Math.random()*available.length)];
-  AppState.used.add(state.id);
+      async function loadData() {
+        if (location.protocol === 'http:' || location.protocol === 'https:') {
+          try {
+            const r = await fetch('state_data.json');
+            if (r.ok) { console.log('✅ Loaded state_data.json'); return await r.json(); }
+          } catch(e) { /* silent fallback */ }
+        }
+        console.log('📦 Using embedded state data');
+        return [...STATES_DATA];
+      }
 
-  const type = Math.random() > 0.5 ? "name" : "capital";
+      // ─── SMART ID RESOLVER ───────────────────────────────
+      function resolveId(svgId) {
+        if (!svgId) return null;
+        
+        let baseId = svgId;
+        if (svgId.endsWith('_marker')) {
+          baseId = svgId.replace('_marker', '');
+        }
+        
+        if (state.map[baseId]) return baseId;
+        if (ID_ALIASES[baseId]) return ID_ALIASES[baseId];
+        
+        const norm = baseId.toLowerCase().trim()
+          .replace(/[\s-]+/g, '_')
+          .replace(/[^a-z0-9_]/g, '')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '');
+        if (state.map[norm]) return norm;
+        if (ID_ALIASES[norm]) return ID_ALIASES[norm];
+        
+        const stripped = norm.replace(/^(in_|state_|ut_|india_)/, '');
+        if (state.map[stripped]) return stripped;
+        if (ID_ALIASES[stripped]) return ID_ALIASES[stripped];
+        
+        const upper = baseId.toUpperCase();
+        if (ID_ALIASES[upper]) return ID_ALIASES[upper];
+        
+        return null;
+      }
 
-  AppState.current = {
-    id: state.id,
-    text: type === "name"
-      ? "Click on: " + state.name
-      : "Which state has capital: " + state.capital + "?"
-  };
+      // ─── MAP INIT ────────────────────────────────────────
+      function initMap() {
+        const svg = $('#map-container svg');
+        if (!svg) {
+          console.warn('⚠️ No SVG found in #map-container.');
+          return;
+        }
+        const ph = $('#svg-placeholder');
+        if (ph) ph.style.display = 'none';
 
-  document.getElementById("question").textContent = AppState.current.text;
+        const features = svg.querySelector('#features') || svg.querySelector('#states') || svg.querySelector('#map') || svg;
+        const els = features.querySelectorAll('path, circle, polygon, polyline, ellipse');
 
-  updateProgress();
-  startTimer();
-}
+        let matched = 0;
+        let markersFound = 0;
+        const unmatchedSvg = [];
+        const renamedPairs = [];
+        const matchedDataIds = new Set();
 
-function startTimer() {
-  AppState.timeLeft = CONFIG.TIMER;
-  updateTimer();
-  clearInterval(AppState.timerRef);
+        els.forEach(el => {
+          const origId = el.id;
+          const tagName = el.tagName.toLowerCase();
+          
+          if (!origId || /^\d+$/.test(origId)) {
+            if (tagName === 'path') el.classList.add('geo-path');
+            return;
+          }
 
-  AppState.timerRef = setInterval(() => {
-    AppState.timeLeft--;
-    updateTimer();
-    if (AppState.timeLeft <= 0) {
-      clearInterval(AppState.timerRef);
-      highlight(AppState.current.id, "var(--correct)", "pulse");
-      AppState.history.push({correct:false});
-      setTimeout(nextQuestion, 800);
-    }
-  }, 1000);
-}
+          const isMarker = origId.endsWith('_marker');
+          const canonicalId = resolveId(origId);
 
-function updateTimer() {
-  const percent = (AppState.timeLeft / CONFIG.TIMER) * 100;
-  document.getElementById("timerFill").style.width = percent + "%";
-}
+          if (canonicalId && state.map[canonicalId]) {
+            if (isMarker) {
+              state.markerMap[origId] = canonicalId;
+              markersFound++;
+              el.classList.add('geo-marker');
+              el.style.pointerEvents = 'auto';
+              
+              el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onStateClick(canonicalId, true);
+              });
+              el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
+              el.addEventListener('mousemove', (e) => tooltipMove(e));
+              el.addEventListener('mouseleave', tooltipHide);
+              
+              if (!matchedDataIds.has(canonicalId)) {
+                matchedDataIds.add(canonicalId);
+                matched++;
+              }
+            } else {
+              if (origId !== canonicalId) {
+                el.id = canonicalId;
+                renamedPairs.push([origId, canonicalId]);
+              }
+              
+              if (!matchedDataIds.has(canonicalId)) {
+                matched++;
+                matchedDataIds.add(canonicalId);
+              }
+              state.svgIdMap[origId] = canonicalId;
+              
+              el.removeAttribute('fill');
+              el.removeAttribute('style');
+              el.classList.add('geo-path');
+              
+              el.addEventListener('click', () => onStateClick(canonicalId, false));
+              el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
+              el.addEventListener('mousemove', (e) => tooltipMove(e));
+              el.addEventListener('mouseleave', tooltipHide);
+            }
+          } else {
+            unmatchedSvg.push(origId);
+            if (tagName === 'path' || tagName === 'polygon' || tagName === 'polyline') {
+              el.classList.add('geo-path');
+            } else if (tagName === 'circle' || tagName === 'ellipse') {
+              el.classList.add('geo-marker');
+            }
+          }
+        });
 
-function updateProgress() {
-  const percent = (AppState.questionIndex / CONFIG.MAX_QUESTIONS) * 100;
-  document.getElementById("progressFill").style.width = percent + "%";
-}
+        state.matchedIds = matchedDataIds;
+        const unmatchedData = state.data.filter(s => !matchedDataIds.has(s.id));
 
-function handleClick(id) {
+        console.log(`%c🗺️ Map Binding Report`, 'font-size:13px;font-weight:bold;color:#3b82f6');
+        console.log(`   ✅ Matched: ${matched}/${state.data.length} regions`);
+        console.log(`   🔵 Markers found: ${markersFound}`);
+        if (renamedPairs.length) console.log(`   🔄 Auto-renamed ${renamedPairs.length} IDs`);
+        if (unmatchedSvg.length) console.log(`   ❓ ${unmatchedSvg.length} SVG elements not matched:`, unmatchedSvg);
+        if (unmatchedData.length) console.log(`   ⚠️ ${unmatchedData.length} data entries have NO SVG element`);
 
-  if (AppState.mode === "learning") {
-    const state = AppState.data.find(s => s.id === id);
-    document.getElementById("info").textContent =
-      state ? "Capital: " + state.capital : "";
-    highlight(id, "var(--primary)", "pulse");
-    return;
-  }
+        if (unmatchedData.length > 5 || matched < 20) {
+          showDiagnosticBanner(matched, unmatchedSvg, unmatchedData, renamedPairs, markersFound);
+        }
+      }
 
-  clearInterval(AppState.timerRef);
+      function showDiagnosticBanner(matched, unmatchedSvg, unmatchedData, renamedPairs, markersFound) {
+        const existing = document.getElementById('diag-banner');
+        if (existing) existing.remove();
 
-  const correct = id === AppState.current.id;
+        const banner = document.createElement('div');
+        banner.id = 'diag-banner';
+        banner.style.cssText = `
+          position:fixed; bottom:0; left:0; right:0; z-index:400;
+          background:var(--warning-light); border-top:2px solid var(--warning);
+          padding:10px 14px; font-size:0.75rem; color:var(--text-heading);
+          display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+          font-family:inherit; box-shadow:0 -4px 12px rgba(0,0,0,0.1);
+        `;
 
-  if (correct) {
-    highlight(id, "var(--correct)", "pulse");
-    AppState.score++;
-  } else {
-    highlight(id, "var(--wrong)", "shake");
-    highlight(AppState.current.id, "var(--correct)");
-  }
+        const unmatchedNames = unmatchedData.map(s => s.name).slice(0, 5).join(', ');
+        const moreCount = unmatchedData.length > 5 ? ` +${unmatchedData.length - 5} more` : '';
 
-  AppState.history.push({correct});
+        banner.innerHTML = `
+          <span style="font-size:1.1rem;flex-shrink:0">⚠️</span>
+          <div style="flex:1;min-width:150px">
+            <strong>Map Mismatch:</strong> ${matched}/${state.data.length} matched
+            ${unmatchedData.length > 0 ? `<br><span style="color:var(--text-muted);font-size:0.7rem">Missing: ${unmatchedNames}${moreCount}</span>` : ''}
+          </div>
+          <button onclick="this.parentElement.remove()" style="
+            padding:3px 10px; border-radius:6px; border:1px solid var(--warning);
+            background:transparent; cursor:pointer; font-weight:600;
+            color:var(--warning); font-size:0.75rem; flex-shrink:0;
+          ">✕</button>
+        `;
+        document.body.appendChild(banner);
+      }
 
-  setTimeout(nextQuestion, 800);
-}
+      // ─── STATE CLICK HANDLER ─────────────────────────────
+      function onStateClick(id, isMarker = false) {
+        const s = state.map[id];
+        if (!s) {
+          console.warn(`No data found for ID: ${id}`);
+          return;
+        }
+        if (state.mode === 'learn') learnClick(id, s, isMarker);
+        else if (state.mode === 'quiz' && state.quiz.active && !state.quiz.answered) quizClick(id, s, isMarker);
+      }
 
-function showSummary() {
-  document.getElementById("summary").classList.remove("hidden");
-  document.getElementById("summaryText").innerHTML =
-    "Score: " + AppState.score + "/" + CONFIG.MAX_QUESTIONS;
+      // ─── LEARNING ────────────────────────────────────────
+      function learnClick(id, s, isMarker) {
+        resetHighlights();
+        state.selected = id;
+        highlight(id, 'selected', isMarker);
+        renderStateInfo(s);
+      }
 
-  saveLeaderboard();
-}
+      function renderStateInfo(s) {
+        $('#learn-placeholder').classList.add('hidden');
+        const el = $('#state-info');
+        el.classList.remove('hidden');
+        el.className = 'anim-fade-in';
+        el.innerHTML = `
+          <div class="info-card">
+            <span class="type-badge ${s.type === 'State' ? 'badge-state' : 'badge-ut'}">${s.type}</span>
+            <h2 class="text-lg sm:text-xl font-bold mt-2 sm:mt-3" style="color:var(--text-heading)">${s.name}</h2>
+            <div class="info-row mt-2 sm:mt-3">
+              <span class="info-row-icon">🏛️</span>
+              <div>
+                <div class="info-row-label">Capital</div>
+                <div class="info-row-value">${s.capital}</div>
+              </div>
+            </div>
+            <div class="info-row">
+              <span class="info-row-icon">📋</span>
+              <div>
+                <div class="info-row-label">Type</div>
+                <div class="info-row-value">${s.type}</div>
+              </div>
+            </div>
+          </div>`;
+      }
 
-function reviewMistakes() {
-  const mistakes = AppState.history
-    .filter(h => !h.correct)
-    .length;
-  alert("You made " + mistakes + " mistakes.");
-}
+      // ─── QUIZ ENGINE ─────────────────────────────────────
+      function startQuiz() {
+        const q = state.quiz;
+        q.idx = 0;
+        q.score = 0;
+        q.history = [];
+        q.questions = generateQuestions();
+        if (!q.questions || q.questions.length === 0) {
+          q.active = false;
+          return;
+        }
+        q.active = true;
+        resetHighlights();
 
-function saveLeaderboard() {
-  const board = JSON.parse(localStorage.getItem("leaderboard")) || [];
-  board.push({date:new Date().toISOString(),score:AppState.score});
-  localStorage.setItem("leaderboard", JSON.stringify(board));
-}
-</script>
+        $('#quiz-start').classList.add('hidden');
+        $('#quiz-results').classList.add('hidden');
+        $('#quiz-active').classList.remove('hidden');
 
+        renderDots();
+        nextQuestion();
+      }
+
+      function generateQuestions() {
+        const quizzable = state.data.filter(s => state.matchedIds.has(s.id));
+        if (quizzable.length === 0) {
+          alert('Quiz cannot start: No map regions matched.');
+          return [];
+        }
+
+        const questions = [];
+        const usedStates = new Set();
+        const usedSpecialTypes = new Set();
+
+        // Question type generators
+        const questionGenerators = [
+          // Type 1: Find by name
+          () => {
+            const available = quizzable.filter(s => !usedStates.has(s.id));
+            if (available.length === 0) return null;
+            const s = available[Math.floor(Math.random() * available.length)];
+            usedStates.add(s.id);
+            const templates = [
+              `Find <strong>${s.name}</strong> on the map`,
+              `Click on <strong>${s.name}</strong>`,
+              `Locate <strong>${s.name}</strong>`,
+              `Where is <strong>${s.name}</strong>?`,
+            ];
+            return {
+              type: 'name',
+              html: templates[Math.floor(Math.random() * templates.length)],
+              correctAnswers: [s.id],
+              displayAnswer: s.name
+            };
+          },
+
+          // Type 2: Find by capital (handles shared capitals)
+          () => {
+            // Check for shared capital first
+            for (const [key, data] of Object.entries(SHARED_CAPITALS)) {
+              const available = data.answers.filter(id => 
+                state.matchedIds.has(id) && !usedStates.has(id)
+              );
+              if (available.length > 0 && !usedSpecialTypes.has('shared_' + key)) {
+                usedSpecialTypes.add('shared_' + key);
+                available.forEach(id => usedStates.add(id));
+                return {
+                  type: 'shared_capital',
+                  html: data.question,
+                  correctAnswers: available,
+                  displayAnswer: available.map(id => state.map[id]?.name).join(' or ')
+                };
+              }
+            }
+            
+            // Regular capital question
+            const available = quizzable.filter(s => !usedStates.has(s.id));
+            if (available.length === 0) return null;
+            const s = available[Math.floor(Math.random() * available.length)];
+            usedStates.add(s.id);
+            const templates = [
+              `Which state/UT has the capital <strong>${s.capital}</strong>?`,
+              `<strong>${s.capital}</strong> is the capital of?`,
+              `Find the region with capital <strong>${s.capital}</strong>`,
+            ];
+            return {
+              type: 'capital',
+              html: templates[Math.floor(Math.random() * templates.length)],
+              correctAnswers: [s.id],
+              displayAnswer: s.name
+            };
+          },
+
+          // Type 3: Sea boundary questions
+          () => {
+            const seaKeys = Object.keys(SEA_BOUNDARIES);
+            for (const key of seaKeys) {
+              if (usedSpecialTypes.has('sea_' + key)) continue;
+              const data = SEA_BOUNDARIES[key];
+              const available = data.answers.filter(id => state.matchedIds.has(id));
+              if (available.length > 0) {
+                usedSpecialTypes.add('sea_' + key);
+                return {
+                  type: 'sea_boundary',
+                  html: data.question,
+                  correctAnswers: available,
+                  displayAnswer: available.map(id => state.map[id]?.name).slice(0, 3).join(', ') + (available.length > 3 ? '...' : '')
+                };
+              }
+            }
+            return null;
+          },
+
+          // Type 4: Country border questions
+          () => {
+            const countryKeys = Object.keys(COUNTRY_BORDERS);
+            const shuffled = countryKeys.sort(() => Math.random() - 0.5);
+            for (const key of shuffled) {
+              if (usedSpecialTypes.has('country_' + key)) continue;
+              const data = COUNTRY_BORDERS[key];
+              const available = data.answers.filter(id => state.matchedIds.has(id));
+              if (available.length > 0) {
+                usedSpecialTypes.add('country_' + key);
+                return {
+                  type: 'country_border',
+                  html: data.question,
+                  correctAnswers: available,
+                  displayAnswer: available.map(id => state.map[id]?.name).slice(0, 3).join(', ') + (available.length > 3 ? '...' : '')
+                };
+              }
+            }
+            return null;
+          }
+        ];
+
+        // Generate 10 questions with variety
+        let attempts = 0;
+        while (questions.length < CFG.MAX_Q && attempts < 50) {
+          attempts++;
+          
+          // Weight towards variety
+          let genIndex;
+          if (questions.length < 3) {
+            genIndex = Math.floor(Math.random() * 2); // Name or capital first
+          } else if (questions.length < 6) {
+            genIndex = Math.floor(Math.random() * 4); // Any type
+          } else {
+            genIndex = Math.floor(Math.random() * 2); // Back to basics
+          }
+          
+          const generator = questionGenerators[genIndex];
+          const q = generator();
+          if (q) {
+            questions.push(q);
+          }
+        }
+
+        // Shuffle questions
+        return questions.sort(() => Math.random() - 0.5);
+      }
+
+      function nextQuestion() {
+        const q = state.quiz;
+        q.answered = false;
+        q.timeLeft = CFG.TIMER;
+        resetHighlights();
+        hideFeedback();
+
+        const question = q.questions[q.idx];
+        $('#q-num').textContent = q.idx + 1;
+        $('#q-text').innerHTML = question.html;
+        updateScore();
+        setDot(q.idx, 'current');
+        startTimer();
+      }
+
+      function quizClick(id, s, isMarker) {
+        const q = state.quiz;
+        const cur = q.questions[q.idx];
+        q.answered = true;
+        clearInterval(q.timer);
+
+        // Check if clicked ID is in the correct answers array
+        const correct = cur.correctAnswers.includes(id);
+        q.history.push({ 
+          question: cur, 
+          clickId: id, 
+          correct, 
+          time: CFG.TIMER - q.timeLeft 
+        });
+
+        if (correct) {
+          q.score++;
+          highlight(id, 'correct', isMarker);
+          showFeedback(true, `Correct! That's ${s.name}`);
+          setDot(q.idx, 'correct');
+        } else {
+          highlight(id, 'wrong', isMarker);
+          // Highlight all correct answers
+          cur.correctAnswers.forEach(correctId => {
+            const hasMarker = Object.values(state.markerMap).includes(correctId);
+            highlight(correctId, 'correct', hasMarker);
+          });
+          const clickedName = state.map[id]?.name || id;
+          showFeedback(false, `Wrong! You clicked ${clickedName}. Answer: ${cur.displayAnswer}`);
+          setDot(q.idx, 'wrong');
+        }
+        updateScore();
+        scheduleNext();
+      }
+
+      function handleTimeout() {
+        const q = state.quiz;
+        if (q.answered) return;
+        q.answered = true;
+        const cur = q.questions[q.idx];
+        q.history.push({ question: cur, clickId: null, correct: false, time: CFG.TIMER });
+
+        // Highlight all correct answers
+        cur.correctAnswers.forEach(correctId => {
+          const hasMarker = Object.values(state.markerMap).includes(correctId);
+          highlight(correctId, 'correct', hasMarker);
+        });
+        showFeedback(false, `Time's up! Answer: ${cur.displayAnswer}`);
+        setDot(q.idx, 'wrong');
+        scheduleNext();
+      }
+
+      function scheduleNext() {
+        const q = state.quiz;
+        setTimeout(() => {
+          if (q.idx < q.questions.length - 1) { q.idx++; nextQuestion(); }
+          else finishQuiz();
+        }, CFG.FEEDBACK_MS);
+      }
+
+      function finishQuiz() {
+        const q = state.quiz;
+        q.active = false;
+        clearInterval(q.timer);
+        resetHighlights();
+
+        $('#quiz-active').classList.add('hidden');
+        $('#quiz-results').classList.remove('hidden');
+        $('#res-score').textContent = q.score;
+
+        let emoji, title, sub;
+        if (q.score === CFG.MAX_Q) { emoji='🏆'; title='Geography Master!'; sub='Perfect score!'; }
+        else if (q.score >= 8)     { emoji='🌟'; title='Excellent!'; sub='You know India well!'; }
+        else if (q.score >= 6)     { emoji='👍'; title='Good Job!'; sub='Keep practicing!'; }
+        else if (q.score >= 4)     { emoji='📚'; title='Keep Learning!'; sub='Try learn mode.'; }
+        else                       { emoji='💪'; title="Don't Give Up!"; sub='Practice makes perfect!'; }
+
+        $('#res-emoji').textContent = emoji;
+        $('#res-title').textContent = title;
+        $('#res-subtitle').textContent = sub;
+        renderBreakdown();
+
+        if (q.score >= 8) spawnConfetti();
+      }
+
+      function endQuiz() {
+        state.quiz.active = false;
+        clearInterval(state.quiz.timer);
+        resetHighlights();
+      }
+
+      // ─── TIMER ───────────────────────────────────────────
+      function startTimer() {
+        const q = state.quiz;
+        q.timeLeft = CFG.TIMER;
+        updateTimerUI();
+        q.timer = setInterval(() => {
+          q.timeLeft--;
+          updateTimerUI();
+          if (q.timeLeft <= 0) { clearInterval(q.timer); handleTimeout(); }
+        }, 1000);
+      }
+
+      function updateTimerUI() {
+        const t = state.quiz.timeLeft;
+        const pct = (t / CFG.TIMER) * 100;
+        const bar = $('#timer-bar');
+        bar.style.width = pct + '%';
+        bar.style.backgroundColor = t > 5 ? 'var(--success)' : t > 3 ? 'var(--warning)' : 'var(--danger)';
+        $('#timer-text').textContent = t;
+        $('#timer-text').style.color = t <= 3 ? 'var(--danger)' : 'var(--text-heading)';
+      }
+
+      // ─── MAP HELPERS ─────────────────────────────────────
+      function highlight(id, cls, isMarker = false) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add(cls);
+        
+        const markerId = id + '_marker';
+        const markerEl = document.getElementById(markerId);
+        if (markerEl) markerEl.classList.add(cls);
+        
+        for (const [mId, stateId] of Object.entries(state.markerMap)) {
+          if (stateId === id) {
+            const m = document.getElementById(mId);
+            if (m) m.classList.add(cls);
+          }
+        }
+      }
+
+      function resetHighlights() {
+        $$('.geo-path').forEach(el => {
+          el.classList.remove('selected', 'correct', 'wrong', 'dimmed');
+        });
+        $$('.geo-marker').forEach(el => {
+          el.classList.remove('selected', 'correct', 'wrong', 'dimmed');
+        });
+      }
+
+      // ─── TOOLTIP ─────────────────────────────────────────
+      function tooltipShow(id, e) {
+        const s = state.map[id];
+        if (!s) return;
+        const tip = $('#tooltip');
+        tip.textContent = (state.mode === 'quiz' && state.quiz.active) ? '?' : s.name;
+        tip.classList.remove('hidden');
+        tooltipMove(e);
+      }
+      function tooltipMove(e) {
+        const tip = $('#tooltip');
+        tip.style.left = (e.clientX + 15) + 'px';
+        tip.style.top = (e.clientY - 35) + 'px';
+      }
+      function tooltipHide() { $('#tooltip').classList.add('hidden'); }
+
+      // ─── UI HELPERS ──────────────────────────────────────
+      function updateScore() { $('#q-score').textContent = state.quiz.score; }
+
+      function showFeedback(ok, msg) {
+        const fb = $('#quiz-feedback');
+        fb.classList.remove('hidden');
+        fb.className = `feedback-card anim-fade-in ${ok ? 'feedback-correct' : 'feedback-wrong'}`;
+        fb.innerHTML = `<span>${ok ? '✅' : '❌'}</span> ${msg}`;
+      }
+      function hideFeedback() { $('#quiz-feedback').className = 'hidden feedback-card'; }
+
+      function renderDots() {
+        const c = $('#progress-dots');
+        c.innerHTML = '';
+        const count = state.quiz.questions.length;
+        for (let i = 0; i < count; i++) {
+          const d = document.createElement('span');
+          d.className = 'progress-dot';
+          d.id = 'dot-' + i;
+          c.appendChild(d);
+        }
+      }
+      function setDot(i, status) {
+        const d = document.getElementById('dot-' + i);
+        if (d) d.className = 'progress-dot dot-' + status;
+      }
+
+      function renderBreakdown() {
+        const c = $('#results-breakdown');
+        c.innerHTML = state.quiz.history.map((h, i) => {
+          const icon = h.correct ? '✅' : '❌';
+          const timeStr = h.clickId === null ? 'Timeout' : h.time + 's';
+          return `<div class="result-item">
+            <span class="result-num">${i + 1}</span>
+            <span class="result-name">${h.question.displayAnswer}</span>
+            <span class="result-time">${timeStr}</span>
+            <span>${icon}</span>
+          </div>`;
+        }).join('');
+      }
+
+      // ─── MODE SWITCHING ──────────────────────────────────
+      function switchMode(mode) {
+        if (state.quiz.active && mode === 'learn') {
+          if (!confirm('End current quiz?')) return;
+          endQuiz();
+        }
+        state.mode = mode;
+        resetHighlights();
+
+        $('#btn-learn').classList.toggle('active', mode === 'learn');
+        $('#btn-quiz').classList.toggle('active', mode === 'quiz');
+        $('#learn-panel').classList.toggle('hidden', mode !== 'learn');
+        $('#quiz-panel').classList.toggle('hidden', mode !== 'quiz');
+
+        if (mode === 'learn') {
+          $('#learn-placeholder').classList.remove('hidden');
+          $('#state-info').classList.add('hidden');
+          state.selected = null;
+        }
+        if (mode === 'quiz') {
+          $('#quiz-start').classList.remove('hidden');
+          $('#quiz-active').classList.add('hidden');
+          $('#quiz-results').classList.add('hidden');
+        }
+      }
+
+      // ─── ZOOM ────────────────────────────────────────────
+      function zoomIn()    { state.zoom = Math.min(state.zoom + 0.3, 4); applyZoom(); }
+      function zoomOut()   { state.zoom = Math.max(state.zoom - 0.3, 0.5); applyZoom(); }
+      function resetZoom() { state.zoom = 1; applyZoom(); }
+      function applyZoom() {
+        const svg = $('#map-container svg');
+        if (svg) svg.style.transform = `scale(${state.zoom})`;
+      }
+
+      // ─── DARK MODE ───────────────────────────────────────
+      function toggleDark() {
+        state.dark = !state.dark;
+        document.documentElement.classList.toggle('dark', state.dark);
+        $('#dark-btn').textContent = state.dark ? '☀️' : '🌙';
+        localStorage.setItem(CFG.DARK_STORAGE, state.dark);
+      }
+
+      // ─── CONFETTI ────────────────────────────────────────
+      function spawnConfetti() {
+        const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#f97316'];
+        for (let i = 0; i < 40; i++) {
+          const el = document.createElement('div');
+          el.className = 'confetti-piece';
+          el.style.left = Math.random() * 100 + 'vw';
+          el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          el.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+          el.style.animationDelay = Math.random() * 0.8 + 's';
+          el.style.width = (Math.random() * 8 + 6) + 'px';
+          el.style.height = (Math.random() * 8 + 6) + 'px';
+          el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+          document.body.appendChild(el);
+          setTimeout(() => el.remove(), 4000);
+        }
+      }
+
+      // ─── KEYBOARD ────────────────────────────────────────
+      function onKey(e) {
+        if (e.key === 'Escape') {
+          if (state.quiz.active) { if (confirm('End quiz?')) { endQuiz(); switchMode('learn'); } }
+        }
+        if (e.key === 'd' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); toggleDark(); }
+      }
+
+      // ─── BOOT ────────────────────────────────────────────
+      document.addEventListener('DOMContentLoaded', init);
+
+      // ─── PUBLIC API ──────────────────────────────────────
+      return {
+        switchMode, startQuiz, toggleDark,
+        zoomIn, zoomOut, resetZoom,
+      };
+
+    })();
+  </script>
 </body>
 </html>
