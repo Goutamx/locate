@@ -1,23 +1,24 @@
 let stateData = [];
+let currentQuestion = null;
+let score = 0;
+let quizActive = false;
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    // ✅ Load JSON file
     fetch("state_data.json")
         .then(response => response.json())
         .then(data => {
             stateData = data;
             enableMap();
-        })
-        .catch(error => {
-            console.error("Error loading JSON:", error);
         });
+
+    document.getElementById("startBtn").addEventListener("click", startQuiz);
+    document.getElementById("nextBtn").addEventListener("click", nextQuestion);
 
 });
 
 function enableMap() {
 
-    // ✅ Select all state paths inside your SVG group
     const states = document.querySelectorAll("#features path");
 
     states.forEach(state => {
@@ -26,47 +27,79 @@ function enableMap() {
         });
     });
 
-    // ✅ Handle markers (if you added circles with _marker)
-    const markers = document.querySelectorAll("[id$='_marker']");
-
-    markers.forEach(marker => {
-        marker.addEventListener("click", function () {
-            const realId = this.id.replace("_marker", "");
-            handleClick(realId);
-        });
-    });
-
 }
 
 function handleClick(stateId) {
 
-    resetColors();
-
-    const stateElement = document.getElementById(stateId);
-
-    if (stateElement) {
-        stateElement.style.fill = "#4A90E2"; // highlight color
+    if (!quizActive) {
+        showStateInfo(stateId);
+        return;
     }
 
-    // ✅ Find state in JSON
+    if (stateId === currentQuestion.id) {
+        highlightState(stateId, "#2ECC71"); // Green
+        score++;
+        document.getElementById("question").textContent = "Correct ✅";
+    } else {
+        highlightState(stateId, "#E74C3C"); // Red
+        highlightState(currentQuestion.id, "#2ECC71");
+        document.getElementById("question").textContent = "Wrong ❌";
+    }
+
+    updateScore();
+    quizActive = false;
+    document.getElementById("nextBtn").style.display = "inline-block";
+}
+
+function showStateInfo(stateId) {
+
+    resetColors();
+    highlightState(stateId, "#4A90E2");
+
     const stateInfo = stateData.find(item => item.id === stateId);
 
     if (stateInfo) {
         document.getElementById("stateName").textContent = stateInfo.name;
         document.getElementById("capitalName").textContent =
             "Capital: " + stateInfo.capital;
-    } else {
-        document.getElementById("stateName").textContent = stateId;
-        document.getElementById("capitalName").textContent = "";
+    }
+}
+
+function startQuiz() {
+    score = 0;
+    updateScore();
+    nextQuestion();
+}
+
+function nextQuestion() {
+
+    resetColors();
+    document.getElementById("nextBtn").style.display = "none";
+
+    const randomIndex = Math.floor(Math.random() * stateData.length);
+    currentQuestion = stateData[randomIndex];
+
+    document.getElementById("question").textContent =
+        "Click on: " + currentQuestion.name;
+
+    quizActive = true;
+}
+
+function highlightState(stateId, color) {
+    const state = document.getElementById(stateId);
+    if (state) {
+        state.style.fill = color;
     }
 }
 
 function resetColors() {
-
     const states = document.querySelectorAll("#features path");
-
     states.forEach(state => {
-        state.style.fill = "#E0E0E0"; // default map color
+        state.style.fill = "#E0E0E0";
     });
+}
 
+function updateScore() {
+    document.getElementById("score").textContent =
+        "Score: " + score;
 }
