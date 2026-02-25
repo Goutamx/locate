@@ -1,33 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>India Map Quiz</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #ffffff;
-        }
+<meta charset="UTF-8">
+<title>India Map Quiz</title>
 
-        h2 {
-            margin-top: 20px;
-        }
+<style>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background: #f4f6f9;
+    margin: 0;
+}
 
-        svg {
-            width: 80%;
-            max-width: 800px;
-            margin-top: 20px;
-        }
-    </style>
+h1 {
+    margin-top: 20px;
+}
+
+#topPanel {
+    margin: 15px;
+}
+
+button {
+    padding: 8px 15px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    background: #4A90E2;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #357ABD;
+}
+
+#scoreBoard {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+svg {
+    width: 90%;
+    max-width: 900px;
+}
+
+#features path {
+    transition: fill 0.3s ease;
+    cursor: pointer;
+}
+</style>
 </head>
 
 <body>
 
-    <h2 id="stateName">Click a State</h2>
-    <p id="capitalName"></p>
+<h1>India Map Learning & Quiz</h1>
 
-    <!-- ✅ PASTE YOUR FULL SVG CODE BELOW THIS LINE -->
-    
+<div id="topPanel">
+    <button onclick="setLearningMode()">Learning Mode</button>
+    <button onclick="startQuiz()">Start Quiz</button>
+    <button onclick="nextQuestion()">Next</button>
+    <div id="scoreBoard">
+        Score: 0 | Question: 0/10 | Time: 0
+    </div>
+</div>
+
+<h2 id="question">Select a mode to begin</h2>
+<p id="info"></p>
+
+<!-- ✅ PASTE YOUR FULL SVG BELOW (Replace this comment) -->
+
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--********* Copyright (c) 2024 Pareto Softare, LLC DBA Simplemaps.com ***************************************
 ************* Free for Commercial Use, full terms at  https://simplemaps.com/resources/svg-license ************
@@ -135,7 +176,7 @@
        style="fill:#e0e0e0;fill-opacity:1;stroke:#444444;stroke-opacity:1;stroke-width:1.8;stroke-dasharray:none" />
     <path
        d="m 262.6,706 0.4,0.1 0.9,-0.2 v -0.5 l 0.6,0.2 0.7,0.4 0.2,-0.5 0.7,0.4 0.1,0.8 0.2,0.2 v 0.8 l -0.3,0.7 0.5,0.3 0.4,0.8 -0.2,0.4 -0.7,0.7 0.7,1.3 -0.2,0.5 0.4,1.2 0.5,0.1 0.6,0.3 -0.1,1.1 0.5,1 -0.2,0.3 -0.9,-0.1 -0.7,0.4 -0.4,0.9 1.1,0.4 0.5,1.2 -0.3,0.7 -0.6,0.5 0.1,0.6 -0.3,0.6 0.2,0.9 0.4,0.8 -0.4,0.3 v 0.2 l -0.2,0.2 -0.3,0.5 0.1,0.7 -0.2,0.2 -0.1,0.3 -0.3,-0.1 -0.2,0.1 -0.1,0.3 -0.6,0.4 -0.4,0.1 v -0.3 l -0.2,-0.1 -0.3,-0.3 -0.4,0.1 -0.1,0.2 -0.1,0.1 0.3,0.6 v 0.2 l -0.8,-0.2 h -0.3 l -0.8,0.4 -0.2,0.2 -1.5,-0.6 0.2,-1.1 -0.5,-1.2 -0.3,-0.4 -0.8,-0.2 -0.3,-0.9 -0.4,-0.4 -1,-0.4 -0.2,-0.9 0.5,-0.2 -0.1,-0.5 0.3,-0.3 -0.5,-2.2 -0.6,-1.9 -0.6,-1.7 -0.4,-0.5 -0.8,0.2 -0.2,-0.2 -0.7,-0.2 -0.2,-0.6 -0.3,0.1 -0.2,-0.5 0.9,0.2 0.7,-0.1 1.1,0.2 0.4,-0.4 -0.3,-0.5 -0.7,0.1 -0.3,-0.7 -0.4,0.1 -0.9,-0.3 0.1,-1 -1.1,0.1 -0.3,-1.5 -0.6,-1.3 0.6,-0.8 h -0.6 l -0.3,-0.3 -0.3,-1.1 -0.6,-1.5 -0.3,-0.1 0.4,-0.1 0.4,0.2 h 0.3 0.6 l 0.2,-0.3 h 0.8 l 0.3,0.2 0.9,-0.5 0.3,0.1 0.2,-0.7 0.7,-1 0.6,0.8 -0.2,0.5 0.8,0.3 h 1 l 0.4,0.9 -0.1,0.4 0.4,0.2 0.1,0.8 -0.1,0.5 0.1,0.4 0.8,0.6 0.7,0.1 0.3,-0.5 1.1,-0.1 z"
-       id="INGA"
+       id="goa"
        name="Goa"
        style="fill:#e0e0e0;fill-opacity:1;stroke:#444444;stroke-opacity:1;stroke-width:1.8;stroke-dasharray:none" />
     <path
@@ -520,7 +561,159 @@
   </g>
 </svg>
 
-    <script src="script.js"></script>
+
+<script>
+
+let stateData = [];
+let currentQuestion = null;
+let score = 0;
+let questionCount = 0;
+let quizMode = false;
+let timer = null;
+let timeLeft = 10;
+let maxQuestions = 10;
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    fetch("state_data.json")
+        .then(response => response.json())
+        .then(data => {
+            stateData = data;
+            enableMap();
+        });
+
+});
+
+function enableMap() {
+    const states = document.querySelectorAll("#features path");
+
+    states.forEach(state => {
+        state.addEventListener("click", function () {
+            handleClick(this.id);
+        });
+    });
+}
+
+function handleClick(stateId) {
+
+    if (!quizMode) {
+        showInfo(stateId);
+        return;
+    }
+
+    clearInterval(timer);
+
+    if (stateId === currentQuestion.id) {
+        highlight(stateId, "#2ECC71");
+        score++;
+        document.getElementById("question").textContent = "Correct ✅";
+    } else {
+        highlight(stateId, "#E74C3C");
+        highlight(currentQuestion.id, "#2ECC71");
+        document.getElementById("question").textContent = "Wrong ❌";
+    }
+
+    updateScoreBoard();
+    quizMode = false;
+}
+
+function showInfo(stateId) {
+    resetMap();
+    highlight(stateId, "#4A90E2");
+
+    const state = stateData.find(s => s.id === stateId);
+    if (state) {
+        document.getElementById("question").textContent = state.name;
+        document.getElementById("info").textContent =
+            "Capital: " + state.capital;
+    }
+}
+
+function setLearningMode() {
+    quizMode = false;
+    clearInterval(timer);
+    resetMap();
+    document.getElementById("question").textContent = "Learning Mode";
+    document.getElementById("info").textContent = "";
+}
+
+function startQuiz() {
+    score = 0;
+    questionCount = 0;
+    nextQuestion();
+}
+
+function nextQuestion() {
+
+    if (questionCount >= maxQuestions) {
+        document.getElementById("question").textContent =
+            "Quiz Finished 🎉 Final Score: " + score;
+        quizMode = false;
+        return;
+    }
+
+    resetMap();
+
+    questionCount++;
+    quizMode = true;
+
+    const randomIndex = Math.floor(Math.random() * stateData.length);
+    currentQuestion = stateData[randomIndex];
+
+    // Randomly choose question type
+    const askCapital = Math.random() > 0.5;
+
+    if (askCapital) {
+        document.getElementById("question").textContent =
+            "Which state has capital: " + currentQuestion.capital + "?";
+    } else {
+        document.getElementById("question").textContent =
+            "Click on: " + currentQuestion.name;
+    }
+
+    startTimer();
+    updateScoreBoard();
+}
+
+function startTimer() {
+    timeLeft = 10;
+    updateScoreBoard();
+
+    clearInterval(timer);
+
+    timer = setInterval(function () {
+        timeLeft--;
+        updateScoreBoard();
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            highlight(currentQuestion.id, "#2ECC71");
+            document.getElementById("question").textContent =
+                "Time's Up ⏳";
+            quizMode = false;
+        }
+    }, 1000);
+}
+
+function highlight(id, color) {
+    const el = document.getElementById(id);
+    if (el) el.style.fill = color;
+}
+
+function resetMap() {
+    const states = document.querySelectorAll("#features path");
+    states.forEach(s => s.style.fill = "#E0E0E0");
+    document.getElementById("info").textContent = "";
+}
+
+function updateScoreBoard() {
+    document.getElementById("scoreBoard").textContent =
+        "Score: " + score +
+        " | Question: " + questionCount + "/" + maxQuestions +
+        " | Time: " + timeLeft;
+}
+
+</script>
 
 </body>
 </html>
