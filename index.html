@@ -1,74 +1,170 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>India Map Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>India Map Pro</title>
 
 <style>
+:root {
+  --bg: #f4f6f9;
+  --text: #222;
+  --primary: #4A90E2;
+  --correct: #2ECC71;
+  --wrong: #E74C3C;
+  --default: #E0E0E0;
+}
+
+body.dark {
+  --bg: #1e1e1e;
+  --text: #ffffff;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    background: #f4f6f9;
-    margin: 0;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  text-align: center;
 }
 
-h1 {
-    margin-top: 20px;
+header {
+  padding: 10px;
 }
 
-#topPanel {
-    margin: 15px;
+button, select {
+  padding: 6px 12px;
+  margin: 4px;
+  cursor: pointer;
 }
 
-button {
-    padding: 8px 15px;
-    margin: 5px;
-    border: none;
-    border-radius: 5px;
-    background: #4A90E2;
-    color: white;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #357ABD;
-}
-
-#scoreBoard {
-    margin-top: 10px;
-    font-weight: bold;
+#loading {
+  position: fixed;
+  inset: 0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  z-index: 1000;
 }
 
 svg {
-    width: 90%;
-    max-width: 900px;
+  width: 90%;
+  max-width: 900px;
 }
 
 #features path {
-    transition: fill 0.3s ease;
-    cursor: pointer;
+  transition: fill 0.3s ease;
+  cursor: pointer;
+}
+
+.pulse {
+  animation: pulse 0.4s;
+}
+
+.shake {
+  animation: shake 0.4s;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
+
+#progressBar, #timerBar {
+  width: 80%;
+  height: 10px;
+  margin: 8px auto;
+  background: #ddd;
+}
+
+#progressFill {
+  height: 100%;
+  width: 0%;
+  background: var(--primary);
+}
+
+#timerFill {
+  height: 100%;
+  width: 100%;
+  background: var(--correct);
+  transition: width 1s linear;
+}
+
+#progressDots span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ccc;
+  margin: 3px;
+}
+
+#progressDots .done {
+  background: var(--primary);
+}
+
+.hidden {
+  display: none;
+}
+
+.tooltip {
+  position: fixed;
+  background: black;
+  color: white;
+  padding: 4px 6px;
+  font-size: 12px;
+  border-radius: 4px;
+  pointer-events: none;
+  display: none;
 }
 </style>
 </head>
-
 <body>
 
-<h1>India Map Learning & Quiz</h1>
+<div id="loading">Loading...</div>
 
-<div id="topPanel">
-    <button onclick="setLearningMode()">Learning Mode</button>
-    <button onclick="startQuiz()">Start Quiz</button>
-    <button onclick="nextQuestion()">Next</button>
-    <div id="scoreBoard">
-        Score: 0 | Question: 0/10 | Time: 0
-    </div>
+<header>
+  <h1>India Map Pro</h1>
+  <button id="darkBtn">🌙</button>
+</header>
+
+<div>
+  <button data-mode="learning">Learning</button>
+  <button data-mode="quiz">Quiz</button>
+  <select id="difficulty">
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+  </select>
 </div>
 
-<h2 id="question">Select a mode to begin</h2>
-<p id="info"></p>
+<div id="progressBar"><div id="progressFill"></div></div>
+<div id="timerBar"><div id="timerFill"></div></div>
+<div id="progressDots"></div>
 
-<!-- ✅ PASTE YOUR FULL SVG BELOW (Replace this comment) -->
+<h2 id="question">Select Mode</h2>
+<div id="info"></div>
 
+<div id="summary" class="hidden">
+  <h2>Quiz Finished 🎉</h2>
+  <div id="summaryText"></div>
+  <button id="reviewBtn">Review Mistakes</button>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ✅ PASTE YOUR SVG HERE -->
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--********* Copyright (c) 2024 Pareto Softare, LLC DBA Simplemaps.com ***************************************
 ************* Free for Commercial Use, full terms at  https://simplemaps.com/resources/svg-license ************
@@ -561,158 +657,212 @@ svg {
   </g>
 </svg>
 
-
 <script>
+const CONFIG = {
+  MAX_QUESTIONS: 10,
+  TIMER: 10
+};
 
-let stateData = [];
-let currentQuestion = null;
-let score = 0;
-let questionCount = 0;
-let quizMode = false;
-let timer = null;
-let timeLeft = 10;
-let maxQuestions = 10;
+const AppState = {
+  mode: "learning",
+  score: 0,
+  questionIndex: 0,
+  used: new Set(),
+  current: null,
+  history: [],
+  data: [],
+  timerRef: null,
+  timeLeft: 0
+};
 
-document.addEventListener("DOMContentLoaded", function () {
+init();
 
-    fetch("state_data.json")
-        .then(response => response.json())
-        .then(data => {
-            stateData = data;
-            enableMap();
-        });
+async function init() {
+  try {
+    const res = await fetch("state_data.json");
+    if (!res.ok) throw new Error("Data load failed");
+    AppState.data = await res.json();
+  } catch (e) {
+    alert("Failed to load data.");
+  }
 
-});
-
-function enableMap() {
-    const states = document.querySelectorAll("#features path");
-
-    states.forEach(state => {
-        state.addEventListener("click", function () {
-            handleClick(this.id);
-        });
-    });
+  document.getElementById("loading").style.display = "none";
+  setupEvents();
 }
 
-function handleClick(stateId) {
+function setupEvents() {
 
-    if (!quizMode) {
-        showInfo(stateId);
-        return;
+  document.body.addEventListener("click", e => {
+    if (e.target.dataset.mode) {
+      AppState.mode = e.target.dataset.mode;
+      if (AppState.mode === "quiz") startQuiz();
+      else resetLearning();
     }
+  });
 
-    clearInterval(timer);
+  document.getElementById("darkBtn").onclick = () =>
+    document.body.classList.toggle("dark");
 
-    if (stateId === currentQuestion.id) {
-        highlight(stateId, "#2ECC71");
-        score++;
-        document.getElementById("question").textContent = "Correct ✅";
-    } else {
-        highlight(stateId, "#E74C3C");
-        highlight(currentQuestion.id, "#2ECC71");
-        document.getElementById("question").textContent = "Wrong ❌";
-    }
+  document.getElementById("difficulty").onchange =
+    e => AppState.difficulty = e.target.value;
 
-    updateScoreBoard();
-    quizMode = false;
+  document.getElementById("reviewBtn").onclick = reviewMistakes;
+
+  document.querySelector("#features")?.addEventListener("click", e => {
+    if (e.target.tagName !== "path") return;
+    handleClick(e.target.id);
+  });
+
+  document.querySelector("#features")?.addEventListener("mousemove", e => {
+    if (AppState.mode !== "learning") return;
+    const state = AppState.data.find(s => s.id === e.target.id);
+    if (!state) return;
+    const tip = document.getElementById("tooltip");
+    tip.style.display = "block";
+    tip.textContent = state.name;
+    tip.style.left = e.pageX + 10 + "px";
+    tip.style.top = e.pageY + 10 + "px";
+  });
+
+  document.querySelector("#features")?.addEventListener("mouseleave", () => {
+    document.getElementById("tooltip").style.display = "none";
+  });
 }
 
-function showInfo(stateId) {
-    resetMap();
-    highlight(stateId, "#4A90E2");
-
-    const state = stateData.find(s => s.id === stateId);
-    if (state) {
-        document.getElementById("question").textContent = state.name;
-        document.getElementById("info").textContent =
-            "Capital: " + state.capital;
-    }
+function resetMap() {
+  document.querySelectorAll("#features path")
+    .forEach(p => p.style.fill = "var(--default)");
 }
 
-function setLearningMode() {
-    quizMode = false;
-    clearInterval(timer);
-    resetMap();
-    document.getElementById("question").textContent = "Learning Mode";
-    document.getElementById("info").textContent = "";
+function highlight(id, color, anim) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.fill = color;
+  if (anim) {
+    el.classList.add(anim);
+    setTimeout(() => el.classList.remove(anim), 400);
+  }
+}
+
+function resetLearning() {
+  clearInterval(AppState.timerRef);
+  AppState.mode = "learning";
+  resetMap();
+  document.getElementById("question").textContent = "Learning Mode";
+  document.getElementById("info").textContent = "";
 }
 
 function startQuiz() {
-    score = 0;
-    questionCount = 0;
-    nextQuestion();
+  AppState.score = 0;
+  AppState.questionIndex = 0;
+  AppState.used.clear();
+  AppState.history = [];
+  nextQuestion();
 }
 
 function nextQuestion() {
 
-    if (questionCount >= maxQuestions) {
-        document.getElementById("question").textContent =
-            "Quiz Finished 🎉 Final Score: " + score;
-        quizMode = false;
-        return;
-    }
+  if (AppState.questionIndex >= CONFIG.MAX_QUESTIONS) {
+    showSummary();
+    return;
+  }
 
-    resetMap();
+  resetMap();
+  AppState.questionIndex++;
 
-    questionCount++;
-    quizMode = true;
+  const available = AppState.data.filter(s => !AppState.used.has(s.id));
+  const state = available[Math.floor(Math.random()*available.length)];
+  AppState.used.add(state.id);
 
-    const randomIndex = Math.floor(Math.random() * stateData.length);
-    currentQuestion = stateData[randomIndex];
+  const type = Math.random() > 0.5 ? "name" : "capital";
 
-    // Randomly choose question type
-    const askCapital = Math.random() > 0.5;
+  AppState.current = {
+    id: state.id,
+    text: type === "name"
+      ? "Click on: " + state.name
+      : "Which state has capital: " + state.capital + "?"
+  };
 
-    if (askCapital) {
-        document.getElementById("question").textContent =
-            "Which state has capital: " + currentQuestion.capital + "?";
-    } else {
-        document.getElementById("question").textContent =
-            "Click on: " + currentQuestion.name;
-    }
+  document.getElementById("question").textContent = AppState.current.text;
 
-    startTimer();
-    updateScoreBoard();
+  updateProgress();
+  startTimer();
 }
 
 function startTimer() {
-    timeLeft = 10;
-    updateScoreBoard();
+  AppState.timeLeft = CONFIG.TIMER;
+  updateTimer();
+  clearInterval(AppState.timerRef);
 
-    clearInterval(timer);
-
-    timer = setInterval(function () {
-        timeLeft--;
-        updateScoreBoard();
-
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            highlight(currentQuestion.id, "#2ECC71");
-            document.getElementById("question").textContent =
-                "Time's Up ⏳";
-            quizMode = false;
-        }
-    }, 1000);
+  AppState.timerRef = setInterval(() => {
+    AppState.timeLeft--;
+    updateTimer();
+    if (AppState.timeLeft <= 0) {
+      clearInterval(AppState.timerRef);
+      highlight(AppState.current.id, "var(--correct)", "pulse");
+      AppState.history.push({correct:false});
+      setTimeout(nextQuestion, 800);
+    }
+  }, 1000);
 }
 
-function highlight(id, color) {
-    const el = document.getElementById(id);
-    if (el) el.style.fill = color;
+function updateTimer() {
+  const percent = (AppState.timeLeft / CONFIG.TIMER) * 100;
+  document.getElementById("timerFill").style.width = percent + "%";
 }
 
-function resetMap() {
-    const states = document.querySelectorAll("#features path");
-    states.forEach(s => s.style.fill = "#E0E0E0");
-    document.getElementById("info").textContent = "";
+function updateProgress() {
+  const percent = (AppState.questionIndex / CONFIG.MAX_QUESTIONS) * 100;
+  document.getElementById("progressFill").style.width = percent + "%";
 }
 
-function updateScoreBoard() {
-    document.getElementById("scoreBoard").textContent =
-        "Score: " + score +
-        " | Question: " + questionCount + "/" + maxQuestions +
-        " | Time: " + timeLeft;
+function handleClick(id) {
+
+  if (AppState.mode === "learning") {
+    const state = AppState.data.find(s => s.id === id);
+    document.getElementById("info").textContent =
+      state ? "Capital: " + state.capital : "";
+    highlight(id, "var(--primary)", "pulse");
+    return;
+  }
+
+  clearInterval(AppState.timerRef);
+
+  const correct = id === AppState.current.id;
+
+  if (correct) {
+    highlight(id, "var(--correct)", "pulse");
+    AppState.score++;
+  } else {
+    highlight(id, "var(--wrong)", "shake");
+    highlight(AppState.current.id, "var(--correct)");
+  }
+
+  AppState.history.push({correct});
+
+  setTimeout(nextQuestion, 800);
 }
 
+function showSummary() {
+  document.getElementById("summary").classList.remove("hidden");
+  document.getElementById("summaryText").innerHTML =
+    "Score: " + AppState.score + "/" + CONFIG.MAX_QUESTIONS;
+
+  saveLeaderboard();
+}
+
+function reviewMistakes() {
+  const mistakes = AppState.history
+    .filter(h => !h.correct)
+    .length;
+  alert("You made " + mistakes + " mistakes.");
+}
+
+function saveLeaderboard() {
+  const board = JSON.parse(localStorage.getItem("leaderboard")) || [];
+  board.push({date:new Date().toISOString(),score:AppState.score});
+  localStorage.setItem("leaderboard", JSON.stringify(board));
+}
 </script>
 
 </body>
