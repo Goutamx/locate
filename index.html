@@ -294,6 +294,14 @@
       stroke: var(--danger) !important;
     }
 
+    /* Invisible touch area for markers - BIGGER TAP TARGET */
+    .geo-marker-hitarea {
+      fill: transparent !important;
+      stroke: none !important;
+      cursor: pointer;
+      pointer-events: all !important;
+    }
+
     /* ======== SIDEBAR ======== */
     .sidebar {
       background: var(--bg-card);
@@ -1188,6 +1196,7 @@
         TIMER: 10,
         FEEDBACK_MS: 1800,
         DARK_STORAGE: 'india-geo-dark',
+        MARKER_HIT_EXTRA: 20, // Extra radius for touch area (in pixels)
       };
 
       // ─── EMBEDDED STATE DATA ─────────────────────────────
@@ -1455,13 +1464,80 @@
               el.classList.add('geo-marker');
               el.style.pointerEvents = 'auto';
               
-              el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                onStateClick(canonicalId, true);
-              });
-              el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
-              el.addEventListener('mousemove', (e) => tooltipMove(e));
-              el.addEventListener('mouseleave', tooltipHide);
+              // Create invisible larger hit area for easier tapping
+              if (tagName === 'circle') {
+                const cx = el.getAttribute('cx');
+                const cy = el.getAttribute('cy');
+                const r = parseFloat(el.getAttribute('r')) || 5;
+                
+                const hitTarget = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                hitTarget.setAttribute('cx', cx);
+                hitTarget.setAttribute('cy', cy);
+                hitTarget.setAttribute('r', r + CFG.MARKER_HIT_EXTRA); // Bigger radius for touch
+                hitTarget.classList.add('geo-marker-hitarea');
+                
+                // Insert BEFORE visible marker (so marker appears on top)
+                el.parentNode.insertBefore(hitTarget, el);
+                
+                // Attach events to hit target
+                hitTarget.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  onStateClick(canonicalId, true);
+                });
+                hitTarget.addEventListener('touchend', (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onStateClick(canonicalId, true);
+                });
+                hitTarget.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
+                hitTarget.addEventListener('mousemove', (e) => tooltipMove(e));
+                hitTarget.addEventListener('mouseleave', tooltipHide);
+                
+                // Also attach events to visible marker for desktop hover effects
+                el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
+                el.addEventListener('mousemove', (e) => tooltipMove(e));
+                el.addEventListener('mouseleave', tooltipHide);
+              } else if (tagName === 'ellipse') {
+                const cx = el.getAttribute('cx');
+                const cy = el.getAttribute('cy');
+                const rx = parseFloat(el.getAttribute('rx')) || 5;
+                const ry = parseFloat(el.getAttribute('ry')) || 5;
+                
+                const hitTarget = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                hitTarget.setAttribute('cx', cx);
+                hitTarget.setAttribute('cy', cy);
+                hitTarget.setAttribute('rx', rx + CFG.MARKER_HIT_EXTRA);
+                hitTarget.setAttribute('ry', ry + CFG.MARKER_HIT_EXTRA);
+                hitTarget.classList.add('geo-marker-hitarea');
+                
+                el.parentNode.insertBefore(hitTarget, el);
+                
+                hitTarget.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  onStateClick(canonicalId, true);
+                });
+                hitTarget.addEventListener('touchend', (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onStateClick(canonicalId, true);
+                });
+                hitTarget.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
+                hitTarget.addEventListener('mousemove', (e) => tooltipMove(e));
+                hitTarget.addEventListener('mouseleave', tooltipHide);
+                
+                el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
+                el.addEventListener('mousemove', (e) => tooltipMove(e));
+                el.addEventListener('mouseleave', tooltipHide);
+              } else {
+                // For non-circle/ellipse markers, attach events directly
+                el.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  onStateClick(canonicalId, true);
+                });
+                el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
+                el.addEventListener('mousemove', (e) => tooltipMove(e));
+                el.addEventListener('mouseleave', tooltipHide);
+              }
               
               if (!matchedDataIds.has(canonicalId)) {
                 matchedDataIds.add(canonicalId);
