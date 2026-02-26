@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>India Geography Explorer</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🇮🇳</text></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #f0f4f8; --bg-card: #ffffff; --bg-card-alt: #f8fafc;
+      --text-heading: #0f172a; --text-body: #475569; --text-muted: #94a3b8;
+      --accent: #4f46e5; --accent-hover: #4338ca; --accent-light: #eef2ff; --accent-text: #3730a3;
+      --success: #059669; --success-light: #d1fae5; --success-text: #065f46;
+      --danger: #dc2626; --danger-light: #fee2e2; --danger-text: #991b1b;
+      --warning: #d97706; --warning-light: #fef3c7;
+      --border: #e2e8f0; --border-focus: #a5b4fc;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --map-default: #dbeafe; --map-hover: #93c5fd; --map-stroke: #60a5fa;
+      --map-stroke-width: 0.5; --map-selected: #3b82f6;
+      --map-correct: #10b981; --map-wrong: #ef4444;
+      --map-marker: #f59e0b; --map-marker-stroke: #d97706;
+      --radius: 12px;
+      --gold: #f59e0b; --silver: #94a3b8; --bronze: #d97706;
+    }
+
+    html.dark {
+      --bg-primary: #0f172a; --bg-card: #1e293b; --bg-card-alt: #1a2332;
+      --text-heading: #f1f5f9; --text-body: #cbd5e1; --text-muted: #64748b;
+      --accent: #818cf8; --accent-hover: #a5b4fc; --accent-light: #1e1b4b; --accent-text: #c7d2fe;
+      --success-light: #064e3b; --success-text: #6ee7b7;
+      --danger-light: #450a0a; --danger-text: #fca5a5;
+      --warning-light: #451a03;
+      --border: #334155; --border-focus: #6366f1;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3); --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+      --map-default: #1e3a5f; --map-hover: #2563eb; --map-stroke: #3b82f6;
+      --map-selected: #60a5fa; --map-correct: #10b981; --map-wrong: #ef4444;
+      --map-marker: #fbbf24; --map-marker-stroke: #f59e0b;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg-primary); color: var(--text-body);
+      transition: background-color 0.3s, color 0.3s;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+
+    .app-header {
+      background: var(--bg-card); border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow); z-index: 50; transition: background-color 0.3s, border-color 0.3s;
+    }
+    .logo-text { font-weight: 800; font-size: 1rem; color: var(--text-heading); letter-spacing: -0.02em; }
+    @media (min-width: 640px) { .logo-text { font-size: 1.15rem; } }
+
+    .mode-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border);
+      background: transparent; color: var(--text-body); font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; font-family: inherit; white-space: nowrap;
+    }
+    @media (min-width: 640px) { .mode-btn { padding: 7px 14px; font-size: 0.82rem; } }
+    .mode-btn:hover { background: var(--bg-card-alt); border-color: var(--accent); color: var(--accent); }
+    .mode-btn.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+
+    .icon-btn {
+      width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 10px; border: 1.5px solid var(--border); background: transparent;
+      font-size: 1rem; cursor: pointer; transition: all 0.2s;
+    }
+    .icon-btn:hover { background: var(--bg-card-alt); border-color: var(--accent); transform: scale(1.05); }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 24px; background: var(--accent); color: #fff;
+      border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+    }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 18px; background: var(--bg-card-alt); color: var(--text-heading);
+      border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: 0.85rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-sm {
+      padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; gap: 4px;
+    }
+
+    .zoom-btn {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 1rem; font-weight: 600; color: var(--text-heading);
+      cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow); user-select: none;
+    }
+    .zoom-btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+    .zoom-btn:active { transform: scale(0.95); }
+
+    .map-wrap {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden; position: relative; transition: background-color 0.3s, border-color 0.3s;
+    }
+    #map-container {
+      width: 100%; height: 100%; overflow: auto;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-overflow-scrolling: touch;
+    }
+    #map-container svg {
+      width: 100%; height: auto; max-height: 100%; display: block;
+      transition: transform 0.25s ease; transform-origin: center center;
+    }
+
+    .geo-path {
+      fill: var(--map-default); stroke: var(--map-stroke); stroke-width: var(--map-stroke-width);
+      cursor: pointer; transition: fill 0.2s, stroke-width 0.15s, opacity 0.2s; pointer-events: all;
+    }
+    .geo-path:hover, .geo-path.hovered { fill: var(--map-hover); stroke-width: 1px; }
+    .geo-path.selected { fill: var(--map-selected); stroke-width: 1.5px; filter: drop-shadow(0 0 6px rgba(59,130,246,0.5)); }
+    .geo-path.correct { fill: var(--map-correct); stroke-width: 1.5px; }
+    .geo-path.wrong { fill: var(--map-wrong); stroke-width: 1.5px; }
+    .geo-path.dimmed { opacity: 0.55; }
+    html.dark .geo-path.dimmed { opacity: 0.35; }
+    .geo-path.hint-glow { fill: var(--map-hover); stroke-width: 1.5px; animation: hint-pulse 0.8s ease-in-out 3; }
+
+    .geo-marker {
+      fill: var(--map-marker); stroke: var(--map-marker-stroke); stroke-width: 2px;
+      cursor: pointer; pointer-events: none; transition: fill 0.2s, stroke-width 0.15s;
+    }
+    .geo-marker.hovered { fill: var(--map-hover); stroke: var(--accent); stroke-width: 3px; filter: drop-shadow(0 0 6px rgba(245,158,11,0.6)); }
+    .geo-marker.selected { fill: var(--map-selected); stroke: var(--accent); stroke-width: 3px; filter: drop-shadow(0 0 8px rgba(59,130,246,0.6)); }
+    .geo-marker.correct { fill: var(--map-correct); stroke: var(--success); }
+    .geo-marker.wrong { fill: var(--map-wrong); stroke: var(--danger); }
+    .geo-marker.hint-glow { fill: var(--map-hover); stroke-width: 3px; animation: hint-pulse 0.8s ease-in-out 3; }
+
+    .geo-marker-hitarea { fill: transparent; stroke: none; cursor: pointer; pointer-events: all; }
+
+    @keyframes hint-pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.5; }
+    }
+
+    .sidebar {
+      background: var(--bg-card); border-top: 1px solid var(--border);
+      transition: background-color 0.3s, border-color 0.3s;
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
+    @media (min-width: 768px) { .sidebar { border-top: none; border-left: 1px solid var(--border); } }
+
+    .search-input {
+      width: 100%; padding: 8px 12px 8px 34px;
+      background: var(--bg-card-alt); border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 0.82rem; font-family: inherit;
+      color: var(--text-heading); outline: none; transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; pointer-events: none; }
+
+    .state-list { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .state-list.open { max-height: 500px; overflow-y: auto; }
+    .state-list-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 8px; cursor: pointer;
+      font-size: 0.8rem; font-weight: 500; color: var(--text-heading); transition: background 0.15s;
+    }
+    .state-list-item:hover, .state-list-item.active { background: var(--accent-light); color: var(--accent); }
+    .state-list-item .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-state { background: var(--accent); }
+    .dot-ut { background: var(--warning); }
+
+    .info-card {
+      background: var(--bg-card-alt); border: 1px solid var(--border);
+      border-left: 4px solid var(--accent); border-radius: var(--radius);
+      padding: 16px; transition: background-color 0.3s, border-color 0.3s;
+    }
+    .info-row { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .info-row:last-child { border-bottom: none; }
+    .info-row-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+    .info-row-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; }
+    .info-row-value { font-size: 0.85rem; font-weight: 600; color: var(--text-heading); }
+
+    .type-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-state { background: var(--accent-light); color: var(--accent-text); }
+    .badge-ut { background: var(--warning-light); color: var(--warning); }
+    .badge-zone { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.6rem; font-weight: 700; }
+
+    .question-card { background: var(--accent-light); border: 1.5px solid var(--accent); border-radius: var(--radius); padding: 14px; }
+    .question-card p { color: var(--accent-text); line-height: 1.5; }
+    .question-card strong { color: var(--accent); font-weight: 800; }
+
+    .timer-bar-track { width: 100%; height: 6px; background: var(--bg-card-alt); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+    .timer-bar { height: 100%; border-radius: 4px; background: var(--success); transition: width 1s linear, background-color 0.5s; }
+
+    .feedback-card { padding: 10px 12px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; line-height: 1.4; }
+    .feedback-correct { background: var(--success-light); color: var(--success-text); border: 1px solid var(--success); }
+    .feedback-wrong { background: var(--danger-light); color: var(--danger-text); border: 1px solid var(--danger); }
+
+    .progress-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .dot-current { background: var(--accent); }
+    .dot-correct { background: var(--success); }
+    .dot-wrong { background: var(--danger); }
+
+    .score-ring {
+      width: 100px; height: 100px; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: 0 auto 16px; border: 4px solid var(--border); position: relative;
+    }
+    .score-ring::after {
+      content: ''; position: absolute; inset: -4px; border-radius: 50%;
+      border: 4px solid transparent; border-top-color: var(--accent); border-right-color: var(--accent);
+    }
+
+    .result-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; border-radius: 8px; margin-bottom: 3px; font-size: 0.75rem; transition: background 0.2s;
+    }
+    .result-item:hover { background: var(--bg-card-alt); }
+    .result-num {
+      width: 20px; height: 20px; border-radius: 50%; background: var(--bg-card-alt);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; color: var(--text-muted); flex-shrink: 0;
+    }
+    .result-name { flex: 1; font-weight: 600; color: var(--text-heading); }
+    .result-time { font-size: 0.68rem; color: var(--text-muted); }
+
+    .map-tooltip {
+      position: fixed; padding: 6px 12px; background: var(--text-heading); color: var(--bg-card);
+      font-size: 0.75rem; font-weight: 600; border-radius: 6px;
+      pointer-events: none; z-index: 200; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .map-tooltip.visible { opacity: 1; }
+
+    .map-loader {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 40px 20px; text-align: center; gap: 16px; min-height: 250px; width: 100%;
+    }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 30px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    }
+    .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-light); }
+    .drop-zone input { display: none; }
+
+    /* Stats & Achievements */
+    .stat-card {
+      background: var(--bg-card-alt); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px; text-align: center; flex: 1;
+    }
+    .stat-value { font-size: 1.2rem; font-weight: 800; color: var(--text-heading); }
+    .stat-label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
+
+    .achievement {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg-card-alt); margin-bottom: 6px; transition: all 0.2s;
+    }
+    .achievement.unlocked { border-color: var(--gold); background: rgba(245,158,11,0.08); }
+    .achievement.locked { opacity: 0.5; }
+    .achievement-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .achievement-name { font-size: 0.78rem; font-weight: 700; color: var(--text-heading); }
+    .achievement-desc { font-size: 0.65rem; color: var(--text-muted); }
+
+    .streak-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 16px; font-size: 0.7rem; font-weight: 700;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: #fff; box-shadow: 0 2px 8px rgba(245,158,11,0.3);
+    }
+
+    .difficulty-btn {
+      flex: 1; padding: 10px 8px; border-radius: 10px;
+      border: 1.5px solid var(--border); background: var(--bg-card-alt);
+      text-align: center; cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .difficulty-btn:hover { border-color: var(--accent); }
+    .difficulty-btn.selected { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    .difficulty-btn .diff-icon { font-size: 1.2rem; }
+    .difficulty-btn .diff-name { font-size: 0.75rem; font-weight: 700; color: var(--text-heading); margin-top: 2px; }
+    .difficulty-btn .diff-desc { font-size: 0.6rem; color: var(--text-muted); }
+
+    .hint-btn {
+      padding: 4px 10px; border-radius: 8px; border: 1.5px solid var(--warning);
+      background: var(--warning-light); color: var(--warning);
+      font-size: 0.72rem; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: all 0.2s;
+    }
+    .hint-btn:hover { background: var(--warning); color: #fff; }
+    .hint-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .tab-bar {
+      display: flex; gap: 2px; background: var(--bg-card-alt);
+      border-radius: 10px; padding: 3px; border: 1px solid var(--border);
+    }
+    .tab-item {
+      flex: 1; padding: 6px 8px; border-radius: 8px; text-align: center;
+      font-size: 0.7rem; font-weight: 600; cursor: pointer;
+      color: var(--text-muted); transition: all 0.2s; border: none; background: transparent;
+      font-family: inherit;
+    }
+    .tab-item.active { background: var(--bg-card); color: var(--accent); box-shadow: var(--shadow); }
+
+    .neighbor-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 8px; font-size: 0.68rem; font-weight: 600;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-heading); cursor: pointer; transition: all 0.15s;
+    }
+    .neighbor-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+    .fun-fact {
+      background: linear-gradient(135deg, var(--accent-light), var(--warning-light));
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 12px; font-size: 0.75rem; color: var(--text-heading);
+      line-height: 1.5;
+    }
+
+    /* Image View Button */
+    .img-view-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 6px;
+      background: var(--accent-light); border: 1px solid var(--accent);
+      color: var(--accent); font-size: 0.7rem;
+      cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .img-view-btn:hover {
+      background: var(--accent); color: #fff;
+      transform: scale(1.1);
+    }
+
+    /* Image Modal */
+    .image-modal {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0, 0, 0, 0.8);
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      padding: 20px;
+    }
+    .image-modal.active {
+      opacity: 1; visibility: visible;
+    }
+    .image-modal-content {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      max-width: 500px; width: 100%;
+      max-height: 90vh;
+      overflow: hidden;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      transform: scale(0.9);
+      transition: transform 0.3s;
+    }
+    .image-modal.active .image-modal-content {
+      transform: scale(1);
+    }
+    .image-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card-alt);
+    }
+    .image-modal-title {
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--text-heading);
+    }
+    .image-modal-close {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; border: none;
+      background: var(--danger-light); color: var(--danger);
+      font-size: 1.2rem; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .image-modal-close:hover {
+      background: var(--danger); color: #fff;
+    }
+    .image-modal-body {
+      padding: 16px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 12px;
+    }
+    .image-modal-img {
+      width: 100%; max-height: 350px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: var(--bg-card-alt);
+    }
+    .image-modal-loading {
+      width: 100%; height: 200px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-card-alt);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .image-modal-attribution {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.4;
+    }
+    .image-modal-attribution a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .image-modal-attribution a:hover {
+      text-decoration: underline;
+    }
+    .image-modal-error {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .image-modal-error-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes confetti-fall { 0% { transform: translateY(0) rotate(0); opacity:1; } 100% { transform: translateY(100vh) rotate(720deg); opacity:0; } }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+    .anim-fade-in { animation: fade-in 0.3s ease-out both; }
+    .anim-shake { animation: shake 0.3s ease; }
+    .confetti-piece { position: fixed; top: -20px; z-index: 600; border-radius: 2px; animation: confetti-fall linear forwards; }
+
+    @media (max-width: 767px) {
+      .app-container { flex-direction: column !important; }
+      .map-section { flex: 1 1 55% !important; min-height: 0 !important; max-height: 55vh !important; }
+      .sidebar { flex: 1 1 45% !important; min-height: 0 !important; max-height: 45vh !important; }
+    }
+    @media (min-width: 768px) {
+      .app-container { flex-direction: row !important; }
+      .map-section { flex: 1 !important; max-height: none !important; }
+      .sidebar { width: 340px !important; flex-shrink: 0 !important; max-height: none !important; }
+    }
+    @media (min-width: 1024px) { .sidebar { width: 400px !important; } }
+  </style>
+</head>
+<body>
+  <div id="app" class="flex flex-col h-full overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="app-header flex items-center justify-between px-2 sm:px-4 md:px-6 py-2 shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="text-lg sm:text-xl">🇮🇳</span>
+        <span class="logo-text">India Explorer</span>
+        <span id="streak-display" class="streak-badge hidden">🔥 0</span>
+      </div>
+      <nav class="flex items-center gap-1" id="mode-nav">
+        <button id="btn-learn" class="mode-btn active" onclick="App.switchMode('learn')">📖<span class="hidden sm:inline">Learn</span></button>
+        <button id="btn-quiz" class="mode-btn" onclick="App.switchMode('quiz')">🧠<span class="hidden sm:inline">Quiz</span></button>
+        <button id="btn-stats" class="mode-btn" onclick="App.switchMode('stats')">🏆<span class="hidden sm:inline">Stats</span></button>
+      </nav>
+      <div class="flex items-center gap-1">
+        <button class="icon-btn" onclick="App.toggleDark()" id="dark-btn" title="Toggle theme">🌙</button>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="app-container flex flex-1 min-h-0 overflow-hidden">
+
+      <!-- MAP -->
+      <section class="map-section relative p-2 md:p-3 flex flex-col min-h-0">
+        <div class="map-wrap flex-1 min-h-0">
+          <div id="map-container">
+            <div id="map-loader" class="map-loader">
+              <div class="spinner"></div>
+              <p style="color:var(--text-muted); font-size:0.85rem;">Loading map…</p>
+            </div>
+          </div>
+        </div>
+        <!-- Map overlay info -->
+        <div id="map-overlay" class="hidden absolute top-3 left-3 md:top-5 md:left-5 z-10" style="max-width:200px">
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 12px;box-shadow:var(--shadow-lg);font-size:0.72rem">
+            <div id="overlay-text" style="color:var(--text-heading);font-weight:700"></div>
+            <div id="overlay-sub" style="color:var(--text-muted);font-size:0.65rem;margin-top:2px"></div>
+          </div>
+        </div>
+        <div class="absolute bottom-3 right-3 md:bottom-5 md:right-5 flex flex-col gap-1 z-10">
+          <button class="zoom-btn" onclick="App.zoomIn()" title="Zoom in">+</button>
+          <button class="zoom-btn" onclick="App.zoomOut()" title="Zoom out">−</button>
+          <button class="zoom-btn text-xs sm:text-sm" onclick="App.resetZoom()" title="Reset">⟲</button>
+        </div>
+      </section>
+
+      <!-- SIDEBAR -->
+      <aside class="sidebar p-2 sm:p-3 md:p-4">
+
+        <!-- ═══ LEARN PANEL ═══ -->
+        <div id="learn-panel">
+          <div class="search-wrap mb-3">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Search states, capitals, rivers…" oninput="App.onSearch(this.value)" onfocus="App.onSearchFocus()" autocomplete="off">
+          </div>
+          <div id="search-results" class="state-list mb-3"></div>
+          <div id="learn-placeholder" class="text-center py-4">
+            <div class="text-3xl mb-2">🗺️</div>
+            <h2 class="text-sm font-bold mb-1" style="color:var(--text-heading)">Explore India</h2>
+            <p class="text-xs" style="color:var(--text-muted)">Click any state or UT on the map</p>
+            <div class="mt-3 flex flex-wrap gap-2 justify-center">
+              <span class="type-badge badge-state">28 States</span>
+              <span class="type-badge badge-ut">8 Union Territories</span>
+            </div>
+            <div class="mt-4 text-left px-1">
+              <p class="text-xs font-semibold mb-2" style="color:var(--text-heading)">💡 Quick Tips</p>
+              <div class="text-xs space-y-1" style="color:var(--text-muted)">
+                <p>• Press <kbd style="background:var(--bg-card-alt);padding:1px 4px;border-radius:3px;border:1px solid var(--border);font-size:0.65rem">/</kbd> to search</p>
+                <p>• Click neighbors to explore connections</p>
+                <p>• Try all 3 quiz difficulties!</p>
+              </div>
+            </div>
+          </div>
+          <div id="state-info" class="hidden"></div>
+        </div>
+
+        <!-- ═══ QUIZ PANEL ═══ -->
+        <div id="quiz-panel" class="hidden">
+
+          <!-- Quiz Setup -->
+          <div id="quiz-start">
+            <div class="text-center mb-3">
+              <div class="text-3xl mb-2">🧠</div>
+              <h2 class="text-sm font-bold mb-1" style="color:var(--text-heading)">Test Your Knowledge</h2>
+            </div>
+
+            <!-- Difficulty Selection -->
+            <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">DIFFICULTY</p>
+            <div class="flex gap-2 mb-4" id="diff-selector">
+              <button class="difficulty-btn" data-diff="easy" onclick="App.setDifficulty('easy')">
+                <div class="diff-icon">🌱</div>
+                <div class="diff-name">Easy</div>
+                <div class="diff-desc">15s · Hints · Names only</div>
+              </button>
+              <button class="difficulty-btn selected" data-diff="medium" onclick="App.setDifficulty('medium')">
+                <div class="diff-icon">🎯</div>
+                <div class="diff-name">Medium</div>
+                <div class="diff-desc">10s · Mixed questions</div>
+              </button>
+              <button class="difficulty-btn" data-diff="hard" onclick="App.setDifficulty('hard')">
+                <div class="diff-icon">🔥</div>
+                <div class="diff-name">Hard</div>
+                <div class="diff-desc">7s · No hints · All types</div>
+              </button>
+            </div>
+
+            <!-- Question count -->
+            <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">QUESTIONS</p>
+            <div class="flex gap-2 mb-4" id="count-selector">
+              <button class="difficulty-btn" data-count="5" onclick="App.setQCount(5)">5</button>
+              <button class="difficulty-btn selected" data-count="10" onclick="App.setQCount(10)">10</button>
+              <button class="difficulty-btn" data-count="15" onclick="App.setQCount(15)">15</button>
+              <button class="difficulty-btn" data-count="36" onclick="App.setQCount(36)">All</button>
+            </div>
+
+            <!-- Question Types -->
+            <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">QUESTION TYPES</p>
+            <div class="text-xs space-y-1.5 mb-4 px-1" style="color:var(--text-body)">
+              <div class="flex items-center gap-2">🎯 Find by state name</div>
+              <div class="flex items-center gap-2">🏛️ Identify by capital</div>
+              <div class="flex items-center gap-2">🌊 Sea & ocean boundaries</div>
+              <div class="flex items-center gap-2">🌍 Country borders</div>
+              <div class="flex items-center gap-2">🏔️ Largest / smallest state</div>
+              <div class="flex items-center gap-2">👥 Most / least populated</div>
+              <div class="flex items-center gap-2">🗣️ Official language</div>
+              <div class="flex items-center gap-2">🏛️ Famous landmarks</div>
+              <div class="flex items-center gap-2">🌿 State symbols (animal/flower)</div>
+              <div class="flex items-center gap-2">🤝 Neighboring states</div>
+              <div class="flex items-center gap-2">📐 Zone identification</div>
+              <div class="flex items-center gap-2">🏞️ River-based questions</div>
+            </div>
+
+            <button class="btn-primary w-full text-sm" onclick="App.startQuiz()">🚀 Start Quiz</button>
+          </div>
+
+          <!-- Quiz Active -->
+          <div id="quiz-active" class="hidden">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold" style="color:var(--text-muted)">Q <span id="q-num" class="text-sm" style="color:var(--text-heading)">1</span>/<span id="q-total">10</span></span>
+              <div class="flex items-center gap-2">
+                <button id="hint-btn" class="hint-btn" onclick="App.useHint()">💡 Hint</button>
+                <span class="text-xs font-semibold" style="color:var(--text-muted)">SCORE <span id="q-score" class="text-sm" style="color:var(--accent)">0</span></span>
+              </div>
+            </div>
+            <div id="progress-dots" class="flex gap-1 justify-center mb-3 flex-wrap"></div>
+            <div class="timer-bar-track mb-2"><div id="timer-bar" class="timer-bar"></div></div>
+            <div class="flex items-center justify-center gap-2 mb-3">
+              <span class="text-base">⏱️</span>
+              <span id="timer-text" class="text-xl font-extrabold" style="color:var(--text-heading)">10</span>
+              <span class="text-xs font-medium" style="color:var(--text-muted)">sec</span>
+            </div>
+            <div id="quiz-question" class="question-card mb-3">
+              <p id="q-text" class="text-center text-xs sm:text-sm font-semibold"></p>
+              <p id="q-hint" class="text-center text-xs mt-2 hidden" style="color:var(--text-muted)"></p>
+            </div>
+            <div id="quiz-feedback" class="hidden feedback-card anim-fade-in"></div>
+            <div id="quiz-streak" class="hidden text-center mt-2">
+              <span class="streak-badge">🔥 <span id="quiz-streak-count">0</span> streak!</span>
+            </div>
+          </div>
+
+          <!-- Quiz Results -->
+          <div id="quiz-results" class="hidden">
+            <div class="text-center py-2">
+              <div id="res-emoji" class="text-4xl mb-2"></div>
+              <h2 id="res-title" class="text-base font-bold" style="color:var(--text-heading)"></h2>
+              <p id="res-subtitle" class="text-xs mb-3" style="color:var(--text-muted)"></p>
+              <div class="score-ring mb-3">
+                <span id="res-score" class="text-2xl font-extrabold" style="color:var(--accent)"></span>
+                <span id="res-total" class="text-xs font-semibold" style="color:var(--text-muted)">/10</span>
+              </div>
+              <div class="flex gap-2 justify-center mb-3">
+                <div class="stat-card"><div class="stat-value" id="res-time">0s</div><div class="stat-label">Avg Time</div></div>
+                <div class="stat-card"><div class="stat-value" id="res-streak">0</div><div class="stat-label">Best Streak</div></div>
+                <div class="stat-card"><div class="stat-value" id="res-accuracy">0%</div><div class="stat-label">Accuracy</div></div>
+              </div>
+            </div>
+            <div id="results-breakdown" class="mb-3 max-h-36 overflow-y-auto"></div>
+            <div id="new-achievements" class="mb-3 hidden"></div>
+            <div class="flex gap-2">
+              <button class="btn-secondary flex-1 text-xs" onclick="App.startQuiz()">🔄 Retry</button>
+              <button class="btn-secondary flex-1 text-xs" onclick="App.switchMode('learn')">📖 Learn</button>
+              <button class="btn-secondary flex-1 text-xs" onclick="App.switchMode('stats')">🏆 Stats</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ STATS PANEL ═══ -->
+        <div id="stats-panel" class="hidden">
+          <div class="text-center mb-3">
+            <div class="text-3xl mb-2">🏆</div>
+            <h2 class="text-sm font-bold" style="color:var(--text-heading)">Your Progress</h2>
+          </div>
+
+          <!-- Overall Stats -->
+          <div class="flex gap-2 mb-4">
+            <div class="stat-card"><div class="stat-value" id="total-quizzes">0</div><div class="stat-label">Quizzes</div></div>
+            <div class="stat-card"><div class="stat-value" id="total-correct">0</div><div class="stat-label">Correct</div></div>
+            <div class="stat-card"><div class="stat-value" id="best-score">0</div><div class="stat-label">Best Score</div></div>
+            <div class="stat-card"><div class="stat-value" id="best-streak-stat">0</div><div class="stat-label">Best Streak</div></div>
+          </div>
+
+          <!-- State Mastery -->
+          <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">STATE MASTERY</p>
+          <div id="mastery-bar" class="mb-4">
+            <div class="timer-bar-track mb-1"><div id="mastery-fill" class="timer-bar" style="background:var(--accent)"></div></div>
+            <div class="flex justify-between text-xs" style="color:var(--text-muted)">
+              <span id="mastery-count">0/36 mastered</span>
+              <span id="mastery-pct">0%</span>
+            </div>
+          </div>
+
+          <!-- Achievements -->
+          <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">ACHIEVEMENTS</p>
+          <div id="achievements-list" class="mb-4"></div>
+
+          <!-- Weakest States -->
+          <p class="text-xs font-semibold mb-2" style="color:var(--text-muted)">PRACTICE THESE</p>
+          <div id="weak-states" class="mb-3"></div>
+
+          <button class="btn-secondary w-full text-xs" onclick="if(confirm('Clear all progress?')){App.clearStats()}">🗑️ Reset Progress</button>
+        </div>
+      </aside>
+    </main>
+
+    <div id="tooltip" class="map-tooltip"></div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="image-modal" onclick="App.closeImageModal(event)">
+      <div class="image-modal-content" onclick="event.stopPropagation()">
+        <div class="image-modal-header">
+          <span id="image-modal-title" class="image-modal-title">Image</span>
+          <button class="image-modal-close" onclick="App.closeImageModal()">×</button>
+        </div>
+        <div class="image-modal-body">
+          <div id="image-modal-loading" class="image-modal-loading">
+            <div class="spinner"></div>
+          </div>
+          <img id="image-modal-img" class="image-modal-img" style="display:none" alt="">
+          <div id="image-modal-error" class="image-modal-error" style="display:none">
+            <div class="image-modal-error-icon">🖼️</div>
+            <p>Image could not be loaded</p>
+          </div>
+          <div id="image-modal-attribution" class="image-modal-attribution"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const App = (() => {
+
+      // ═══════ CONFIG ═══════
+      const CFG = {
+        FEEDBACK_MS: 1800,
+        DARK_KEY: 'india-geo-dark',
+        STATS_KEY: 'india-geo-stats',
+        MARKER_HIT_EXTRA: 20,
+        SVG_FILES: ['india-map.svg','india.svg','map.svg'],
+        DIFFICULTIES: {
+          easy:   { timer:15, hints:3, label:'Easy',   types:['name'] },
+          medium: { timer:10, hints:1, label:'Medium', types:['name','capital','sea','country','neighbor'] },
+          hard:   { timer:7,  hints:0, label:'Hard',   types:['name','capital','sea','country','neighbor','river','language','landmark','zone','symbol','area','population','literacy'] },
+        },
+      };
+
+      // ═══════ WIKIMEDIA IMAGE DATABASE ═══════
+      const WIKI_IMAGES = {
+        // Animals
+        "Blackbuck": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Blackbuck_male_antelope.jpg/640px-Blackbuck_male_antelope.jpg",
+        "Gayal": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Bos_frontalis.jpg/640px-Bos_frontalis.jpg",
+        "Indian Rhinoceros": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Indian_rhinoceros_%28Rhinoceros_unicornis%29_4.jpg/640px-Indian_rhinoceros_%28Rhinoceros_unicornis%29_4.jpg",
+        "Gaur": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Gaur_at_Parambikulam.jpg/640px-Gaur_at_Parambikulam.jpg",
+        "Wild Buffalo": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Indian_Water_Buffalo.jpg/640px-Indian_Water_Buffalo.jpg",
+        "Asiatic Lion": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Asiatic_Lion_male.jpg/640px-Asiatic_Lion_male.jpg",
+        "Snow Leopard": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Irbis4.jpg/640px-Irbis4.jpg",
+        "Indian Elephant": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Elephas_maximus_%28Bandipur%29.jpg/640px-Elephas_maximus_%28Bandipur%29.jpg",
+        "Swamp Deer": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Barasingha_in_Kanha_Tiger_Reserve.jpg/640px-Barasingha_in_Kanha_Tiger_Reserve.jpg",
+        "Indian Giant Squirrel": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Ratufa_indica_%28Bhadra%2C_2006%29.jpg/640px-Ratufa_indica_%28Bhadra%2C_2006%29.jpg",
+        "Sangai Deer": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Sangai.jpg/640px-Sangai.jpg",
+        "Clouded Leopard": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Clouded_leopard.jpg/640px-Clouded_leopard.jpg",
+        "Serow": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Capricornis_sumatraensis.jpg/640px-Capricornis_sumatraensis.jpg",
+        "Sambar Deer": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Sambar_deer.jpg/640px-Sambar_deer.jpg",
+        "Chinkara": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Indian_Gazelle_or_Chinkara.jpg/640px-Indian_Gazelle_or_Chinkara.jpg",
+        "Red Panda": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/RedPandaFullBody.JPG/640px-RedPandaFullBody.JPG",
+        "Nilgiri Tahr": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Nilgiri_Tahr.jpg/640px-Nilgiri_Tahr.jpg",
+        "Spotted Deer": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Chital_stag_Kanha.jpg/640px-Chital_stag_Kanha.jpg",
+        "Phayre's Leaf Monkey": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Phayre%27s_leaf_monkey.jpg/640px-Phayre%27s_leaf_monkey.jpg",
+        "Alpine Musk Deer": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Moschus_chrysogaster.jpg/640px-Moschus_chrysogaster.jpg",
+        "Fishing Cat": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/Fishing_cat.jpg/640px-Fishing_cat.jpg",
+        "Dugong": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Dugong_Marsa_Alam.jpg/640px-Dugong_Marsa_Alam.jpg",
+        "Indian Grey Mongoose": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Indian_Grey_Mongoose.jpg/640px-Indian_Grey_Mongoose.jpg",
+        "Nilgai": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Nilgai_at_Gir.jpg/640px-Nilgai_at_Gir.jpg",
+        "Hangul (Kashmir Stag)": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Kashmir_stag.jpg/640px-Kashmir_stag.jpg",
+        "Butterfly Fish": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Chaetodon_lunula.jpg/640px-Chaetodon_lunula.jpg",
+
+        // Birds
+        "Rose-ringed Parakeet": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/Rose-ringed_Parakeet_I_IMG_9797.jpg/640px-Rose-ringed_Parakeet_I_IMG_9797.jpg",
+        "Great Hornbill": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Great_Hornbill_Photograph_By_Shantanu_Kuveskar.jpg/640px-Great_Hornbill_Photograph_By_Shantanu_Kuveskar.jpg",
+        "White-winged Duck": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Cairina_scutulata.jpg/640px-Cairina_scutulata.jpg",
+        "Indian Roller": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Indian_roller_%28Coracias_benghalensis%29_Photograph_By_Shantanu_Kuveskar.jpg/640px-Indian_roller_%28Coracias_benghalensis%29_Photograph_By_Shantanu_Kuveskar.jpg",
+        "Hill Myna": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Hill_Myna.jpg/640px-Hill_Myna.jpg",
+        "Ruby-throated Bulbul": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Rubigula_dispar.jpg/640px-Rubigula_dispar.jpg",
+        "Greater Flamingo": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Greater_flamingo_%28Phoenicopterus_roseus%29.jpg/640px-Greater_flamingo_%28Phoenicopterus_roseus%29.jpg",
+        "Black Francolin": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Black_francolin.jpg/640px-Black_francolin.jpg",
+        "Western Tragopan": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Western_Tragopan.jpg/640px-Western_Tragopan.jpg",
+        "Asian Koel": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Asian_Koel_male.jpg/640px-Asian_Koel_male.jpg",
+        "Mrs. Hume's Pheasant": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Syrmaticus_humiae.jpg/640px-Syrmaticus_humiae.jpg",
+        "Blyth's Tragopan": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/Tragopan_blythii.jpg/640px-Tragopan_blythii.jpg",
+        "Northern Goshawk": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Northern_Goshawk_ad_M2.jpg/640px-Northern_Goshawk_ad_M2.jpg",
+        "Godawan (Great Indian Bustard)": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Great_Indian_Bustard.jpg/640px-Great_Indian_Bustard.jpg",
+        "Blood Pheasant": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Ithaginis_cruentus.jpg/640px-Ithaginis_cruentus.jpg",
+        "Emerald Dove": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Chalcophaps_indica_-_Mae_Wong.jpg/640px-Chalcophaps_indica_-_Mae_Wong.jpg",
+        "Green Imperial Pigeon": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Green_Imperial_Pigeon.jpg/640px-Green_Imperial_Pigeon.jpg",
+        "Sarus Crane": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Sarus_Crane_%28Grus_antigone%29_at_Sultanpur_I_Picture_034.jpg/640px-Sarus_Crane_%28Grus_antigone%29_at_Sultanpur_I_Picture_034.jpg",
+        "Himalayan Monal": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Himalayan_Monal.jpg/640px-Himalayan_Monal.jpg",
+        "White-breasted Kingfisher": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/White-throated_kingfisher_%28Halcyon_smyrnensis%29.jpg/640px-White-throated_kingfisher_%28Halcyon_smyrnensis%29.jpg",
+        "Andaman Wood Pigeon": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Andaman_Wood_Pigeon.jpg/640px-Andaman_Wood_Pigeon.jpg",
+        "Indian Grey Hornbill": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Indian_grey_hornbill_%28Ocyceros_birostris%29.jpg/640px-Indian_grey_hornbill_%28Ocyceros_birostris%29.jpg",
+        "House Sparrow": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Passer_domesticus_male_%2815%29.jpg/640px-Passer_domesticus_male_%2815%29.jpg",
+        "Black-necked Crane": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Black-necked_Crane.jpg/640px-Black-necked_Crane.jpg",
+        "Sooty Tern": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Sooty_Tern.jpg/640px-Sooty_Tern.jpg",
+        "Yellow-footed Green Pigeon": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Yellow-footed_Green_Pigeon_%28Treron_phoenicoptera%29_Photograph_By_Shantanu_Kuveskar.jpg/640px-Yellow-footed_Green_Pigeon_%28Treron_phoenicoptera%29_Photograph_By_Shantanu_Kuveskar.jpg",
+        "Indian Paradise Flycatcher": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Asian_Paradise_Flycatcher.jpg/640px-Asian_Paradise_Flycatcher.jpg",
+
+        // Flowers
+        "Water Lily": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Nymphaea_pubescens1.jpg/640px-Nymphaea_pubescens1.jpg",
+        "Foxtail Orchid": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Rhynchostylis_retusa_-_Flickr_003.jpg/640px-Rhynchostylis_retusa_-_Flickr_003.jpg",
+        "Marigold": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Tagetes_erecta1.jpg/640px-Tagetes_erecta1.jpg",
+        "Rhynchostylis": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Rhynchostylis_retusa_-_Flickr_003.jpg/640px-Rhynchostylis_retusa_-_Flickr_003.jpg",
+        "Plumeria": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/Frangipani_flowers.jpg/640px-Frangipani_flowers.jpg",
+        "Lotus": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Sacred_lotus_Nelumbo_nucifera.jpg/640px-Sacred_lotus_Nelumbo_nucifera.jpg",
+        "Pink Rhododendron": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Rhododendron_campanulatum01.jpg/640px-Rhododendron_campanulatum01.jpg",
+        "Palash": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Butea_monosperma_flowers.jpg/640px-Butea_monosperma_flowers.jpg",
+        "Golden Shower": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Cassia_fistula_flowers.jpg/640px-Cassia_fistula_flowers.jpg",
+        "White Lily": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/White_Lily.JPG/640px-White_Lily.JPG",
+        "Jarul": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Lagerstroemia_speciosa_flowers.jpg/640px-Lagerstroemia_speciosa_flowers.jpg",
+        "Siroi Lily": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Lilium_mackliniae.jpg/640px-Lilium_mackliniae.jpg",
+        "Lady's Slipper Orchid": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Cypripedium_calceolus_060506.jpg/640px-Cypripedium_calceolus_060506.jpg",
+        "Red Vanda": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Renanthera_imschootiana.jpg/640px-Renanthera_imschootiana.jpg",
+        "Rhododendron": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Rhododendron_arboreum_in_Kullu_valley.jpg/640px-Rhododendron_arboreum_in_Kullu_valley.jpg",
+        "Ashoka": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Saraca_asoca_flowers.jpg/640px-Saraca_asoca_flowers.jpg",
+        "Gladiolus": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Gladiolus_11.jpg/640px-Gladiolus_11.jpg",
+        "Rohida": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Tecomella_undulata_flower.jpg/640px-Tecomella_undulata_flower.jpg",
+        "Noble Orchid": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Cymbidium_goeringii.jpg/640px-Cymbidium_goeringii.jpg",
+        "Gloriosa Lily": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Gloriosa_superba_flower.jpg/640px-Gloriosa_superba_flower.jpg",
+        "Tangedu": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Senna_auriculata_flowers.jpg/640px-Senna_auriculata_flowers.jpg",
+        "Indian Rose Chestnut": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Mesua_ferrea.jpg/640px-Mesua_ferrea.jpg",
+        "Brahma Kamal": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Saussurea_obvallata.jpg/640px-Saussurea_obvallata.jpg",
+        "Night-flowering Jasmine": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Nyctanthes_arbor-tristis_flowers.jpg/640px-Nyctanthes_arbor-tristis_flowers.jpg",
+        "Andaman Padauk": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Pterocarpus_dalbergioides.jpg/640px-Pterocarpus_dalbergioides.jpg",
+        "Dhak": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Butea_monosperma_flowers.jpg/640px-Butea_monosperma_flowers.jpg",
+        "Alfalfa": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Medicago_sativa_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-094.jpg/640px-Medicago_sativa_-_K%C3%B6hler%E2%80%93s_Medizinal-Pflanzen-094.jpg",
+
+        // Rivers
+        "Godavari": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Godavari_at_Bhadrachalam.jpg/640px-Godavari_at_Bhadrachalam.jpg",
+        "Krishna": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Krishna_River.jpg/640px-Krishna_River.jpg",
+        "Brahmaputra": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Brahmaputra_River_view.jpg/640px-Brahmaputra_River_view.jpg",
+        "Ganga": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Ganges_in_Varanasi.jpg/640px-Ganges_in_Varanasi.jpg",
+        "Mahanadi": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Mahanadi_River.jpg/640px-Mahanadi_River.jpg",
+        "Mandovi": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Mandovi_River.jpg/640px-Mandovi_River.jpg",
+        "Narmada": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Narmada_River.jpg/640px-Narmada_River.jpg",
+        "Yamuna": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Yamuna_River.jpg/640px-Yamuna_River.jpg",
+        "Kaveri": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Kaveri_river.jpg/640px-Kaveri_river.jpg",
+        "Periyar": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Periyar_River.jpg/640px-Periyar_River.jpg",
+        "Chambal": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Chambal_River.jpg/640px-Chambal_River.jpg",
+        "Sutlej": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Sutlej_River.jpg/640px-Sutlej_River.jpg",
+        "Teesta": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Teesta_River.jpg/640px-Teesta_River.jpg",
+        "Indus": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Indus_River.jpg/640px-Indus_River.jpg",
+        "Jhelum": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Jhelum_River.jpg/640px-Jhelum_River.jpg",
+      };
+
+      // ═══════ ENRICHED STATE DATA ═══════
+      const STATES = [
+        {id:"andhra_pradesh",name:"Andhra Pradesh",capital:"Amaravati",type:"State",zone:"South",language:"Telugu",area:162968,population:49577103,literacy:67.4,animal:"Blackbuck",bird:"Rose-ringed Parakeet",flower:"Water Lily",river:"Godavari, Krishna",neighbors:["telangana","karnataka","tamil_nadu","odisha","chhattisgarh"],landmarks:["Tirumala Venkateswara Temple","Araku Valley"],funFact:"Has the second longest coastline among Indian states."},
+        {id:"arunachal_pradesh",name:"Arunachal Pradesh",capital:"Itanagar",type:"State",zone:"Northeast",language:"English",area:83743,population:1383727,literacy:65.4,animal:"Gayal",bird:"Great Hornbill",flower:"Foxtail Orchid",river:"Brahmaputra, Siang",neighbors:["assam","nagaland"],landmarks:["Tawang Monastery","Ziro Valley"],funFact:"First state in India to see the sunrise every day."},
+        {id:"assam",name:"Assam",capital:"Dispur",type:"State",zone:"Northeast",language:"Assamese",area:78438,population:31205576,literacy:72.2,animal:"Indian Rhinoceros",bird:"White-winged Duck",flower:"Foxtail Orchid",river:"Brahmaputra",neighbors:["arunachal_pradesh","nagaland","manipur","mizoram","tripura","meghalaya","west_bengal"],landmarks:["Kaziranga National Park","Kamakhya Temple"],funFact:"Home to the one-horned rhinoceros and the world's largest river island, Majuli."},
+        {id:"bihar",name:"Bihar",capital:"Patna",type:"State",zone:"East",language:"Hindi",area:94163,population:104099452,literacy:61.8,animal:"Gaur",bird:"Indian Roller",flower:"Marigold",river:"Ganga, Gandak, Sone",neighbors:["uttar_pradesh","jharkhand","west_bengal"],landmarks:["Nalanda University","Mahabodhi Temple"],funFact:"Ancient seat of learning—Nalanda University was founded in the 5th century."},
+        {id:"chhattisgarh",name:"Chhattisgarh",capital:"Raipur",type:"State",zone:"Central",language:"Hindi",area:135192,population:25545198,literacy:70.3,animal:"Wild Buffalo",bird:"Hill Myna",flower:"Rhynchostylis",river:"Mahanadi, Indravati",neighbors:["madhya_pradesh","maharashtra","telangana","andhra_pradesh","odisha","jharkhand","uttar_pradesh"],landmarks:["Chitrakote Falls","Barnawapara WS"],funFact:"Known as the 'rice bowl of India' for its abundant paddy production."},
+        {id:"goa",name:"Goa",capital:"Panaji",type:"State",zone:"West",language:"Konkani",area:3702,population:1458545,literacy:88.7,animal:"Gaur",bird:"Ruby-throated Bulbul",flower:"Plumeria",river:"Mandovi, Zuari",neighbors:["maharashtra","karnataka"],landmarks:["Basilica of Bom Jesus","Dudhsagar Falls"],funFact:"Smallest state by area and the richest in India by GDP per capita."},
+        {id:"gujarat",name:"Gujarat",capital:"Gandhinagar",type:"State",zone:"West",language:"Gujarati",area:196024,population:60439692,literacy:78.0,animal:"Asiatic Lion",bird:"Greater Flamingo",flower:"Marigold",river:"Narmada, Sabarmati, Tapi",neighbors:["rajasthan","madhya_pradesh","maharashtra","dadra_and_nagar_haveli_and_daman_and_diu"],landmarks:["Statue of Unity","Gir National Park","Rann of Kutch"],funFact:"Only natural habitat of the Asiatic Lion in the world."},
+        {id:"haryana",name:"Haryana",capital:"Chandigarh",type:"State",zone:"North",language:"Hindi",area:44212,population:25351462,literacy:75.6,animal:"Blackbuck",bird:"Black Francolin",flower:"Lotus",river:"Yamuna, Ghaggar",neighbors:["punjab","himachal_pradesh","uttarakhand","uttar_pradesh","rajasthan","delhi"],landmarks:["Sultanpur Bird Sanctuary","Kurukshetra"],funFact:"The Mahabharata war was fought at Kurukshetra in Haryana."},
+        {id:"himachal_pradesh",name:"Himachal Pradesh",capital:"Shimla",type:"State",zone:"North",language:"Hindi",area:55673,population:6864602,literacy:82.8,animal:"Snow Leopard",bird:"Western Tragopan",flower:"Pink Rhododendron",river:"Beas, Sutlej, Ravi",neighbors:["jammu_and_kashmir","ladakh","punjab","haryana","uttarakhand"],landmarks:["Rohtang Pass","Shimla Mall Road"],funFact:"Known as the 'Land of Gods' with 2000+ temples."},
+        {id:"jharkhand",name:"Jharkhand",capital:"Ranchi",type:"State",zone:"East",language:"Hindi",area:79710,population:32988134,literacy:66.4,animal:"Indian Elephant",bird:"Asian Koel",flower:"Palash",river:"Damodar, Subarnarekha",neighbors:["bihar","west_bengal","odisha","chhattisgarh","uttar_pradesh"],landmarks:["Betla National Park","Hundru Falls"],funFact:"Contains 40% of India's mineral resources."},
+        {id:"karnataka",name:"Karnataka",capital:"Bengaluru",type:"State",zone:"South",language:"Kannada",area:191791,population:61095297,literacy:75.4,animal:"Indian Elephant",bird:"Indian Roller",flower:"Lotus",river:"Kaveri, Krishna, Tungabhadra",neighbors:["goa","maharashtra","telangana","andhra_pradesh","tamil_nadu","kerala"],landmarks:["Hampi","Mysore Palace","Jog Falls"],funFact:"Bengaluru is the Silicon Valley of India."},
+        {id:"kerala",name:"Kerala",capital:"Thiruvananthapuram",type:"State",zone:"South",language:"Malayalam",area:38863,population:33406061,literacy:94.0,animal:"Indian Elephant",bird:"Great Hornbill",flower:"Golden Shower",river:"Periyar, Pampa",neighbors:["karnataka","tamil_nadu"],landmarks:["Backwaters","Munnar","Periyar Tiger Reserve"],funFact:"Highest literacy rate in India at 94% — 'God's Own Country'."},
+        {id:"madhya_pradesh",name:"Madhya Pradesh",capital:"Bhopal",type:"State",zone:"Central",language:"Hindi",area:308252,population:72626809,literacy:69.3,animal:"Swamp Deer",bird:"Indian Paradise Flycatcher",flower:"White Lily",river:"Narmada, Chambal, Betwa",neighbors:["rajasthan","uttar_pradesh","chhattisgarh","maharashtra","gujarat"],landmarks:["Khajuraho Temples","Sanchi Stupa","Bandhavgarh"],funFact:"Largest state by area in central India — 'Heart of India'."},
+        {id:"maharashtra",name:"Maharashtra",capital:"Mumbai",type:"State",zone:"West",language:"Marathi",area:307713,population:112374333,literacy:82.3,animal:"Indian Giant Squirrel",bird:"Yellow-footed Green Pigeon",flower:"Jarul",river:"Godavari, Krishna, Tapi",neighbors:["gujarat","madhya_pradesh","chhattisgarh","telangana","karnataka","goa","dadra_and_nagar_haveli_and_daman_and_diu"],landmarks:["Gateway of India","Ajanta & Ellora Caves"],funFact:"Most populated state and financial capital of India."},
+        {id:"manipur",name:"Manipur",capital:"Imphal",type:"State",zone:"Northeast",language:"Meitei",area:22327,population:2855794,literacy:79.2,animal:"Sangai Deer",bird:"Mrs. Hume's Pheasant",flower:"Siroi Lily",river:"Barak, Manipur",neighbors:["nagaland","assam","mizoram"],landmarks:["Loktak Lake","Kangla Fort"],funFact:"Home to Loktak Lake — the largest freshwater lake in NE India with floating islands."},
+        {id:"meghalaya",name:"Meghalaya",capital:"Shillong",type:"State",zone:"Northeast",language:"Khasi, English",area:22429,population:2966889,literacy:74.4,animal:"Clouded Leopard",bird:"Hill Myna",flower:"Lady's Slipper Orchid",river:"Umiam",neighbors:["assam"],landmarks:["Living Root Bridges","Mawsynram","Cherrapunji"],funFact:"Mawsynram receives the highest rainfall in the world."},
+        {id:"mizoram",name:"Mizoram",capital:"Aizawl",type:"State",zone:"Northeast",language:"Mizo",area:21081,population:1097206,literacy:91.3,animal:"Serow",bird:"Mrs. Hume's Pheasant",flower:"Red Vanda",river:"Tlawng",neighbors:["assam","manipur","tripura"],landmarks:["Phawngpui Peak","Dampa Tiger Reserve"],funFact:"Second highest literacy rate in India after Kerala."},
+        {id:"nagaland",name:"Nagaland",capital:"Kohima",type:"State",zone:"Northeast",language:"English",area:16579,population:1978502,literacy:79.6,animal:"Gayal",bird:"Blyth's Tragopan",flower:"Rhododendron",river:"Doyang, Dhansiri",neighbors:["assam","arunachal_pradesh","manipur"],landmarks:["Hornbill Festival","Dzukou Valley"],funFact:"Known as the 'Land of Festivals' — the Hornbill Festival is called the 'Festival of Festivals'."},
+        {id:"odisha",name:"Odisha",capital:"Bhubaneswar",type:"State",zone:"East",language:"Odia",area:155707,population:41974218,literacy:72.9,animal:"Sambar Deer",bird:"Indian Roller",flower:"Ashoka",river:"Mahanadi, Brahmani",neighbors:["west_bengal","jharkhand","chhattisgarh","andhra_pradesh","telangana"],landmarks:["Konark Sun Temple","Jagannath Temple","Chilika Lake"],funFact:"Konark Sun Temple is shaped like a giant chariot with stone wheels."},
+        {id:"punjab",name:"Punjab",capital:"Chandigarh",type:"State",zone:"North",language:"Punjabi",area:50362,population:27743338,literacy:75.8,animal:"Blackbuck",bird:"Northern Goshawk",flower:"Gladiolus",river:"Sutlej, Beas, Ravi",neighbors:["jammu_and_kashmir","himachal_pradesh","haryana","rajasthan"],landmarks:["Golden Temple","Wagah Border"],funFact:"The Golden Temple serves free food to over 100,000 people daily."},
+        {id:"rajasthan",name:"Rajasthan",capital:"Jaipur",type:"State",zone:"West",language:"Hindi",area:342239,population:68548437,literacy:66.1,animal:"Chinkara",bird:"Godawan (Great Indian Bustard)",flower:"Rohida",river:"Chambal, Luni",neighbors:["punjab","haryana","uttar_pradesh","madhya_pradesh","gujarat"],landmarks:["Jaipur City Palace","Thar Desert","Jaisalmer Fort"],funFact:"Largest Indian state by area — bigger than many countries!"},
+        {id:"sikkim",name:"Sikkim",capital:"Gangtok",type:"State",zone:"Northeast",language:"English, Nepali",area:7096,population:610577,literacy:81.4,animal:"Red Panda",bird:"Blood Pheasant",flower:"Noble Orchid",river:"Teesta, Rangit",neighbors:["west_bengal"],landmarks:["Kanchenjunga","Rumtek Monastery"],funFact:"India's first fully organic state — no chemical fertilizers used!"},
+        {id:"tamil_nadu",name:"Tamil Nadu",capital:"Chennai",type:"State",zone:"South",language:"Tamil",area:130058,population:72147030,literacy:80.1,animal:"Nilgiri Tahr",bird:"Emerald Dove",flower:"Gloriosa Lily",river:"Kaveri, Vaigai",neighbors:["kerala","karnataka","andhra_pradesh","puducherry"],landmarks:["Meenakshi Temple","Marina Beach","Ooty"],funFact:"Has the oldest classical language in the world — Tamil (over 2000 years old)."},
+        {id:"telangana",name:"Telangana",capital:"Hyderabad",type:"State",zone:"South",language:"Telugu",area:112077,population:35193978,literacy:66.5,animal:"Spotted Deer",bird:"Indian Roller",flower:"Tangedu",river:"Godavari, Krishna",neighbors:["maharashtra","chhattisgarh","andhra_pradesh","karnataka"],landmarks:["Charminar","Golconda Fort","Ramoji Film City"],funFact:"Youngest Indian state — formed in 2014. Ramoji Film City is the world's largest film studio."},
+        {id:"tripura",name:"Tripura",capital:"Agartala",type:"State",zone:"Northeast",language:"Bengali, Kokborok",area:10486,population:3673917,literacy:87.2,animal:"Phayre's Leaf Monkey",bird:"Green Imperial Pigeon",flower:"Indian Rose Chestnut",river:"Gomati, Manu",neighbors:["assam","mizoram"],landmarks:["Ujjayanta Palace","Neermahal"],funFact:"Third smallest state — surrounded by Bangladesh on three sides."},
+        {id:"uttar_pradesh",name:"Uttar Pradesh",capital:"Lucknow",type:"State",zone:"North",language:"Hindi",area:240928,population:199812341,literacy:67.7,animal:"Swamp Deer",bird:"Sarus Crane",flower:"Palash",river:"Ganga, Yamuna",neighbors:["uttarakhand","himachal_pradesh","haryana","rajasthan","madhya_pradesh","chhattisgarh","jharkhand","bihar","delhi"],landmarks:["Taj Mahal","Varanasi Ghats"],funFact:"Most populated state — if it were a country, it would be the 5th most populous in the world."},
+        {id:"uttarakhand",name:"Uttarakhand",capital:"Dehradun",type:"State",zone:"North",language:"Hindi",area:53483,population:10086292,literacy:78.8,animal:"Alpine Musk Deer",bird:"Himalayan Monal",flower:"Brahma Kamal",river:"Ganga, Yamuna",neighbors:["himachal_pradesh","uttar_pradesh","haryana"],landmarks:["Valley of Flowers","Kedarnath Temple","Jim Corbett NP"],funFact:"The Ganga and Yamuna rivers originate here — 'Land of the Gods'."},
+        {id:"west_bengal",name:"West Bengal",capital:"Kolkata",type:"State",zone:"East",language:"Bengali",area:88752,population:91276115,literacy:76.3,animal:"Fishing Cat",bird:"White-breasted Kingfisher",flower:"Night-flowering Jasmine",river:"Ganga (Hooghly), Teesta",neighbors:["sikkim","bihar","jharkhand","odisha","assam"],landmarks:["Victoria Memorial","Sundarbans","Darjeeling"],funFact:"The Sundarbans is the largest mangrove forest and home to the Royal Bengal Tiger."},
+        {id:"andaman_and_nicobar_islands",name:"Andaman & Nicobar Islands",capital:"Port Blair",type:"Union Territory",zone:"Islands",language:"Hindi, English",area:8249,population:380581,literacy:86.6,animal:"Dugong",bird:"Andaman Wood Pigeon",flower:"Andaman Padauk",river:"—",neighbors:[],landmarks:["Cellular Jail","Radhanagar Beach"],funFact:"Has Asia's oldest jail — Cellular Jail was used during India's freedom struggle."},
+        {id:"chandigarh",name:"Chandigarh",capital:"Chandigarh",type:"Union Territory",zone:"North",language:"Hindi, Punjabi",area:114,population:1055450,literacy:86.0,animal:"Indian Grey Mongoose",bird:"Indian Grey Hornbill",flower:"Dhak",river:"—",neighbors:["punjab","haryana"],landmarks:["Rock Garden","Sukhna Lake"],funFact:"Designed by Le Corbusier — one of the first planned cities in India."},
+        {id:"dadra_and_nagar_haveli_and_daman_and_diu",name:"Dadra & Nagar Haveli and Daman & Diu",capital:"Daman",type:"Union Territory",zone:"West",language:"Gujarati, Hindi",area:603,population:585764,literacy:76.2,animal:"—",bird:"—",flower:"—",river:"Damanganga",neighbors:["gujarat","maharashtra"],landmarks:["Diu Fort","Silvassa"],funFact:"Was under Portuguese rule until 1961."},
+        {id:"delhi",name:"Delhi",capital:"New Delhi",type:"Union Territory",zone:"North",language:"Hindi, English",area:1484,population:16787941,literacy:86.2,animal:"Nilgai",bird:"House Sparrow",flower:"Alfalfa",river:"Yamuna",neighbors:["haryana","uttar_pradesh"],landmarks:["Red Fort","India Gate","Qutub Minar"],funFact:"Has the world's largest metro network in terms of route length in Asia."},
+        {id:"jammu_and_kashmir",name:"Jammu & Kashmir",capital:"Srinagar / Jammu",type:"Union Territory",zone:"North",language:"Urdu, Kashmiri",area:55538,population:12267032,literacy:67.2,animal:"Hangul (Kashmir Stag)",bird:"Black-necked Crane",flower:"Lotus",river:"Jhelum, Chenab",neighbors:["ladakh","himachal_pradesh","punjab"],landmarks:["Dal Lake","Gulmarg","Vaishno Devi"],funFact:"Dal Lake's floating houseboats are world-famous tourist attractions."},
+        {id:"ladakh",name:"Ladakh",capital:"Leh",type:"Union Territory",zone:"North",language:"Ladakhi, Hindi",area:59146,population:274289,literacy:77.2,animal:"Snow Leopard",bird:"Black-necked Crane",flower:"—",river:"Indus, Zanskar",neighbors:["jammu_and_kashmir","himachal_pradesh"],landmarks:["Pangong Lake","Nubra Valley","Khardung La"],funFact:"Has the highest motorable pass in the world — Khardung La at 5,359m."},
+        {id:"lakshadweep",name:"Lakshadweep",capital:"Kavaratti",type:"Union Territory",zone:"Islands",language:"Malayalam",area:32,population:64473,literacy:91.8,animal:"Butterfly Fish",bird:"Sooty Tern",flower:"—",river:"—",neighbors:[],landmarks:["Agatti Island","Bangaram Atoll"],funFact:"Smallest UT by area — a group of 36 beautiful coral islands."},
+        {id:"puducherry",name:"Puducherry",capital:"Puducherry",type:"Union Territory",zone:"South",language:"Tamil, French",area:479,population:1247953,literacy:85.8,animal:"—",bird:"—",flower:"—",river:"—",neighbors:["tamil_nadu"],landmarks:["Auroville","Promenade Beach"],funFact:"Was a French colony until 1954 — French is still spoken here."},
+      ];
+
+      const SEA = {
+        arabian_sea:{q:"Which state/UT touches the <strong>Arabian Sea</strong>?",a:["gujarat","maharashtra","goa","karnataka","kerala","dadra_and_nagar_haveli_and_daman_and_diu","lakshadweep"]},
+        bay_of_bengal:{q:"Which state/UT touches the <strong>Bay of Bengal</strong>?",a:["west_bengal","odisha","andhra_pradesh","tamil_nadu","puducherry","andaman_and_nicobar_islands"]},
+        indian_ocean:{q:"Which state touches the <strong>Indian Ocean</strong>?",a:["tamil_nadu","kerala"]},
+      };
+      const COUNTRY = {
+        china:{q:"Which state/UT borders <strong>China</strong>?",a:["jammu_and_kashmir","ladakh","himachal_pradesh","uttarakhand","sikkim","arunachal_pradesh"]},
+        pakistan:{q:"Which state/UT borders <strong>Pakistan</strong>?",a:["gujarat","rajasthan","punjab","jammu_and_kashmir","ladakh"]},
+        nepal:{q:"Which state borders <strong>Nepal</strong>?",a:["uttarakhand","uttar_pradesh","bihar","west_bengal","sikkim"]},
+        bhutan:{q:"Which state borders <strong>Bhutan</strong>?",a:["sikkim","west_bengal","assam","arunachal_pradesh"]},
+        bangladesh:{q:"Which state borders <strong>Bangladesh</strong>?",a:["west_bengal","assam","meghalaya","tripura","mizoram"]},
+        myanmar:{q:"Which state borders <strong>Myanmar</strong>?",a:["arunachal_pradesh","nagaland","manipur","mizoram"]},
+      };
+      const SHARED_CAP = {chandigarh:{q:"Which state has capital <strong>Chandigarh</strong>?",a:["punjab","haryana"]}};
+
+      // ZONE COLORS
+      const ZONE_COLORS = {North:'#3b82f6',South:'#10b981',East:'#f59e0b',West:'#8b5cf6',Central:'#ef4444',Northeast:'#ec4899',Islands:'#06b6d4'};
+
+      // ═══════ ALIAS TABLE ═══════
+      const ALIAS = {};
+      (function(){
+        const d=[
+          ["andhra_pradesh",["IN-AP","AP","in-ap","ap"]],
+          ["arunachal_pradesh",["IN-AR","AR","in-ar","ar"]],
+          ["assam",["IN-AS","AS","in-as","as"]],
+          ["bihar",["IN-BR","BR","in-br","br"]],
+          ["chhattisgarh",["IN-CT","CT","in-ct","ct","chattisgarh"]],
+          ["goa",["IN-GA","GA","in-ga","ga"]],
+          ["gujarat",["IN-GJ","GJ","in-gj","gj"]],
+          ["haryana",["IN-HR","HR","in-hr","hr"]],
+          ["himachal_pradesh",["IN-HP","HP","in-hp","hp"]],
+          ["jharkhand",["IN-JH","JH","in-jh","jh"]],
+          ["karnataka",["IN-KA","KA","in-ka","ka"]],
+          ["kerala",["IN-KL","KL","in-kl","kl"]],
+          ["madhya_pradesh",["IN-MP","MP","in-mp","mp"]],
+          ["maharashtra",["IN-MH","MH","in-mh","mh"]],
+          ["manipur",["IN-MN","MN","in-mn","mn"]],
+          ["meghalaya",["IN-ML","ML","in-ml","ml"]],
+          ["mizoram",["IN-MZ","MZ","in-mz","mz"]],
+          ["nagaland",["IN-NL","NL","in-nl","nl"]],
+          ["odisha",["IN-OR","OR","in-or","or","IN-OD","OD","in-od","od","orissa"]],
+          ["punjab",["IN-PB","PB","in-pb","pb"]],
+          ["rajasthan",["IN-RJ","RJ","in-rj","rj"]],
+          ["sikkim",["IN-SK","SK","in-sk","sk"]],
+          ["tamil_nadu",["IN-TN","TN","in-tn","tn"]],
+          ["telangana",["IN-TG","TG","in-tg","tg","IN-TS","TS","in-ts","ts"]],
+          ["tripura",["IN-TR","TR","in-tr","tr"]],
+          ["uttar_pradesh",["IN-UP","UP","in-up","up"]],
+          ["uttarakhand",["IN-UT","UT","in-ut","ut","IN-UK","UK","in-uk","uk"]],
+          ["west_bengal",["IN-WB","WB","in-wb","wb"]],
+          ["andaman_and_nicobar_islands",["IN-AN","AN","in-an","an","andaman"]],
+          ["chandigarh",["IN-CH","CH","in-ch","ch"]],
+          ["dadra_and_nagar_haveli_and_daman_and_diu",["IN-DH","DH","IN-DN","DN","IN-DD","DD","dadra","daman","dnhdd","dadra_nagar_haveli_daman_diu","dadra_nagar_haveli_daman_diu_marker","dnhdd_marker"]],
+          ["delhi",["IN-DL","DL","in-dl","dl","nct"]],
+          ["jammu_and_kashmir",["IN-JK","JK","in-jk","jk","jammu","kashmir"]],
+          ["ladakh",["IN-LA","LA","in-la","la"]],
+          ["lakshadweep",["IN-LD","LD","in-ld","ld"]],
+          ["puducherry",["IN-PY","PY","in-py","py","pondicherry"]]
+        ];
+        d.forEach(([c,a])=>{
+          ALIAS[c]=c;
+          a.forEach(x=>{
+            ALIAS[x]=c;
+            ALIAS[x.toLowerCase()]=c;
+          });
+        });
+      })();
+
+      // ═══════ APP STATE ═══════
+      const M = {};
+      STATES.forEach(s => M[s.id] = s);
+
+      const ST = {
+        mode:'learn', matchedIds:new Set(), selected:null, dark:false, zoom:1, hoveredId:null,
+        difficulty:'medium', qCount:10, hintsLeft:1,
+        quiz:{active:false,questions:[],idx:0,score:0,timer:null,timeLeft:10,answered:false,history:[],streak:0,bestStreak:0},
+        stats: { quizzes:0, totalCorrect:0, bestScore:0, bestStreak:0, stateMastery:{}, history:[] },
+      };
+
+      // ═══════ ACHIEVEMENTS ═══════
+      const ACHIEVEMENTS = [
+        {id:'first_quiz',name:'First Steps',desc:'Complete your first quiz',icon:'🎯',check:s=>s.quizzes>=1},
+        {id:'perfect_10',name:'Perfect 10',desc:'Score 10/10',icon:'💯',check:s=>s.bestScore>=10},
+        {id:'streak_5',name:'On Fire!',desc:'Get a 5-answer streak',icon:'🔥',check:s=>s.bestStreak>=5},
+        {id:'streak_10',name:'Unstoppable',desc:'Get a 10-answer streak',icon:'⚡',check:s=>s.bestStreak>=10},
+        {id:'quiz_5',name:'Regular',desc:'Complete 5 quizzes',icon:'📚',check:s=>s.quizzes>=5},
+        {id:'quiz_20',name:'Dedicated',desc:'Complete 20 quizzes',icon:'🎓',check:s=>s.quizzes>=20},
+        {id:'master_10',name:'Explorer',desc:'Master 10 states',icon:'🗺️',check:s=>Object.values(s.stateMastery).filter(v=>v>=3).length>=10},
+        {id:'master_all',name:'India Expert',desc:'Master all 36 regions',icon:'🏆',check:s=>Object.values(s.stateMastery).filter(v=>v>=3).length>=36},
+        {id:'correct_50',name:'Half Century',desc:'Get 50 total correct answers',icon:'🎯',check:s=>s.totalCorrect>=50},
+        {id:'correct_200',name:'Double Century',desc:'Get 200 total correct answers',icon:'🌟',check:s=>s.totalCorrect>=200},
+        {id:'speed_demon',name:'Speed Demon',desc:'Answer within 2 seconds',icon:'⚡',check:(s,h)=>h&&h.some(r=>r.ok&&r.time<=2)},
+        {id:'ne_master',name:'NE Expert',desc:'Master all NE states',icon:'🏔️',check:s=>{const ne=STATES.filter(x=>x.zone==='Northeast').map(x=>x.id);return ne.every(id=>(s.stateMastery[id]||0)>=3);}},
+      ];
+
+      // ═══════ DOM ═══════
+      const $ = s => document.querySelector(s);
+      const $$ = s => document.querySelectorAll(s);
+
+      // ═══════ GET IMAGE URL ═══════
+      function getImageUrl(name) {
+        if (!name || name === '—') return null;
+        // Check exact match first
+        if (WIKI_IMAGES[name]) return WIKI_IMAGES[name];
+        // Check partial match
+        for (const key in WIKI_IMAGES) {
+          if (name.includes(key) || key.includes(name)) {
+            return WIKI_IMAGES[key];
+          }
+        }
+        // For rivers, try first river name
+        if (name.includes(',')) {
+          const firstName = name.split(',')[0].trim();
+          if (WIKI_IMAGES[firstName]) return WIKI_IMAGES[firstName];
+        }
+        return null;
+      }
+
+      // ═══════ IMAGE MODAL ═══════
+      function showImageModal(title, name, type) {
+        const modal = $('#image-modal');
+        const titleEl = $('#image-modal-title');
+        const imgEl = $('#image-modal-img');
+        const loadingEl = $('#image-modal-loading');
+        const errorEl = $('#image-modal-error');
+        const attrEl = $('#image-modal-attribution');
+
+        const imageUrl = getImageUrl(name);
+
+        titleEl.textContent = `${type}: ${name}`;
+        imgEl.style.display = 'none';
+        errorEl.style.display = 'none';
+        loadingEl.style.display = 'flex';
+        attrEl.innerHTML = '';
+
+        modal.classList.add('active');
+
+        if (!imageUrl) {
+          loadingEl.style.display = 'none';
+          errorEl.style.display = 'block';
+          attrEl.innerHTML = `<p>No image available for "${name}"</p>`;
+          return;
+        }
+
+        imgEl.onload = () => {
+          loadingEl.style.display = 'none';
+          imgEl.style.display = 'block';
+          attrEl.innerHTML = `
+            <p>📷 Image from <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a></p>
+            <p>Licensed under Creative Commons</p>
+          `;
+        };
+
+        imgEl.onerror = () => {
+          loadingEl.style.display = 'none';
+          errorEl.style.display = 'block';
+          attrEl.innerHTML = `<p>Failed to load image</p>`;
+        };
+
+        imgEl.src = imageUrl;
+        imgEl.alt = name;
+      }
+
+      function closeImageModal(event) {
+        if (event && event.target !== event.currentTarget) return;
+        $('#image-modal').classList.remove('active');
+        $('#image-modal-img').src = '';
+      }
+
+      // ═══════ RESOLVE ID ═══════
+      function resolve(svgId) {
+        if(!svgId) return null;
+        let base = svgId.replace(/_marker$/,'');
+        if(M[base]) return base;
+        if(ALIAS[base]) return ALIAS[base];
+        const norm = base.toLowerCase().trim().replace(/[\s-]+/g,'_').replace(/[^a-z0-9_]/g,'').replace(/_+/g,'_');
+        if(M[norm]) return norm;
+        if(ALIAS[norm]) return ALIAS[norm];
+        const stripped = norm.replace(/^(in_|state_|ut_|india_)/,'');
+        if(M[stripped]) return stripped;
+        if(ALIAS[stripped]) return ALIAS[stripped];
+        return null;
+      }
+
+      function idFromEl(el) {
+        if(!el) return null;
+        if(el.classList?.contains('geo-marker-hitarea')) return el.getAttribute('data-state-id');
+        if(el.id){const r=resolve(el.id);if(r)return r;}
+        const p=el.closest?.('[id]');
+        if(p&&p.id)return resolve(p.id);
+        return null;
+      }
+
+      // ═══════ INIT ═══════
+      async function init() {
+        loadStats();
+        if(localStorage.getItem(CFG.DARK_KEY)==='true') toggleDark();
+        await loadSVG();
+        document.addEventListener('keydown',onKey);
+        renderSearchList('');
+      }
+
+      // ═══════ SVG LOADING ═══════
+      async function loadSVG() {
+        const c=$('#map-container'),l=$('#map-loader');
+        if(c.querySelector('svg')){if(l)l.remove();bindMap();return;}
+        for(const f of CFG.SVG_FILES){try{const r=await fetch(f);if(r.ok){const t=await r.text();if(l)l.remove();c.insertAdjacentHTML('beforeend',t);bindMap();return;}}catch(e){}}
+        if(l)l.remove();showUploadUI(c);
+      }
+
+      function showUploadUI(c){c.innerHTML=`<div class="map-loader"><div class="text-3xl mb-2">🗺️</div><p style="color:var(--text-heading);font-weight:700">Load India Map SVG</p><p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:16px">Place <code style="background:var(--bg-card-alt);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">india-map.svg</code> in the same folder, or upload:</p><label class="drop-zone" id="drop-zone"><input type="file" accept=".svg" id="svg-file-input"><div class="text-2xl mb-2">📂</div><p style="color:var(--text-body);font-size:0.82rem;font-weight:600">Drop SVG here or click to browse</p></label></div>`;
+        const z=$('#drop-zone'),i=$('#svg-file-input');
+        z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('dragover');});
+        z.addEventListener('dragleave',()=>z.classList.remove('dragover'));
+        z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('dragover');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0],c);});
+        i.addEventListener('change',()=>{if(i.files[0])loadFile(i.files[0],c);});
+      }
+
+      function loadFile(f,c){const r=new FileReader();r.onload=()=>{c.innerHTML=r.result;bindMap();};r.readAsText(f);}
+
+      // ═══════ MAP BINDING ═══════
+      function bindMap() {
+        const svg=$('#map-container svg');if(!svg)return;
+        const els=svg.querySelectorAll('path,circle,polygon,polyline,ellipse');
+        let matched=0;const done=new Set();
+        els.forEach(el=>{const id=el.id,tag=el.tagName.toLowerCase();
+          if(!id||/^\d+$/.test(id)){if(tag==='path'||tag==='polygon'||tag==='polyline')el.classList.add('geo-path');return;}
+          const isM=id.endsWith('_marker'),cid=resolve(id);
+          if(cid&&M[cid]){if(isM){el.classList.add('geo-marker');createHitArea(el,cid);}
+          else{if(id!==cid)el.id=cid;el.removeAttribute('fill');el.removeAttribute('style');el.classList.add('geo-path');el.setAttribute('data-state-id',cid);}
+          if(!done.has(cid)){matched++;done.add(cid);}}
+          else{if(tag==='path'||tag==='polygon'||tag==='polyline')el.classList.add('geo-path');else if(tag==='circle'||tag==='ellipse')el.classList.add('geo-marker');}
+        });
+        ST.matchedIds=done;
+
+        // Fix: Move Dadra & Daman marker to top layer
+        const dnhMarker = document.getElementById('dadra_nagar_haveli_daman_diu_marker');
+        const dnhHitArea = document.querySelector('.geo-marker-hitarea[data-state-id="dadra_and_nagar_haveli_and_daman_and_diu"]');
+        if (dnhMarker) {
+          dnhMarker.parentNode.appendChild(dnhMarker);
+        }
+        if (dnhHitArea) {
+          dnhHitArea.parentNode.appendChild(dnhHitArea);
+        }
+
+        let last=0;
+        svg.addEventListener('click',e=>{const now=Date.now();if(now-last<300)return;last=now;const id=idFromEl(e.target);if(id)handleClick(id);});
+        svg.addEventListener('touchend',e=>{const id=idFromEl(e.target);if(id){e.preventDefault();const now=Date.now();if(now-last<300)return;last=now;handleClick(id);}},{passive:false});
+        svg.addEventListener('mouseover',e=>{const id=idFromEl(e.target);if(id&&id!==ST.hoveredId){ST.hoveredId=id;setHover(id,true);tipShow(id,e);}});
+        svg.addEventListener('mousemove',e=>{if(ST.hoveredId)tipMove(e);});
+        svg.addEventListener('mouseout',e=>{if(!ST.hoveredId)return;const nid=idFromEl(e.relatedTarget);if(nid!==ST.hoveredId){setHover(ST.hoveredId,false);ST.hoveredId=null;tipHide();}});
+        console.log(`🗺️ Bound ${matched}/${STATES.length} regions`);
+      }
+
+      function createHitArea(el,cid){
+        const tag=el.tagName.toLowerCase();
+        let h;
+        const extraSize = (cid === 'dadra_and_nagar_haveli_and_daman_and_diu') ? 40 : CFG.MARKER_HIT_EXTRA;
+        
+        if(tag==='circle'){
+          h=document.createElementNS('http://www.w3.org/2000/svg','circle');
+          h.setAttribute('cx',el.getAttribute('cx'));
+          h.setAttribute('cy',el.getAttribute('cy'));
+          h.setAttribute('r',parseFloat(el.getAttribute('r')||5)+extraSize);
+        }
+        else if(tag==='ellipse'){
+          h=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+          h.setAttribute('cx',el.getAttribute('cx'));
+          h.setAttribute('cy',el.getAttribute('cy'));
+          h.setAttribute('rx',parseFloat(el.getAttribute('rx')||5)+extraSize);
+          h.setAttribute('ry',parseFloat(el.getAttribute('ry')||5)+extraSize);
+        }
+        else{
+          try{
+            const b=el.getBBox();
+            h=document.createElementNS('http://www.w3.org/2000/svg','circle');
+            h.setAttribute('cx',b.x+b.width/2);
+            h.setAttribute('cy',b.y+b.height/2);
+            h.setAttribute('r',Math.max(b.width,b.height,30)/2+extraSize);
+          }catch(e){return;}
+        }
+        h.classList.add('geo-marker-hitarea');
+        h.setAttribute('data-state-id',cid);
+        el.parentNode.insertBefore(h,el);
+      }
+
+      function setHover(id,on){const el=document.getElementById(id);if(el)el.classList.toggle('hovered',on);const m=document.getElementById(id+'_marker');if(m)m.classList.toggle('hovered',on);}
+
+      // ═══════ CLICK ROUTER ═══════
+      function handleClick(id){const s=M[id];if(!s)return;if(ST.mode==='learn')learnSelect(id,s);else if(ST.mode==='quiz'&&ST.quiz.active&&!ST.quiz.answered)quizAnswer(id,s);}
+
+      // ═══════ LEARN MODE ═══════
+      function learnSelect(id,s){resetHL();ST.selected=id;hl(id,'selected');
+        $$('.geo-path').forEach(el=>{const sid=el.getAttribute('data-state-id');if(sid&&sid!==id)el.classList.add('dimmed');});
+        renderInfo(s);
+        $$('.state-list-item').forEach(li=>li.classList.toggle('active',li.dataset.id===id));
+      }
+
+      // ═══════ RENDER INFO WITH IMAGE BUTTONS ═══════
+      function renderInfo(s){
+        $('#learn-placeholder').classList.add('hidden');
+        const el=$('#state-info');el.classList.remove('hidden');el.className='anim-fade-in';
+        const zoneColor = ZONE_COLORS[s.zone]||'var(--accent)';
+        const neighborsHTML = (s.neighbors||[]).map(nid=>{const n=M[nid];return n?`<span class="neighbor-chip" onclick="App.selectFromList('${nid}')">${n.name}</span>`:''}).join(' ');
+
+        // Helper to create image button
+        const imgBtn = (name, type) => {
+          if (!name || name === '—') return '';
+          const hasImg = getImageUrl(name) !== null;
+          return hasImg ? `<button class="img-view-btn" onclick="App.showImageModal('${s.name}', '${name.replace(/'/g, "\\'")}', '${type}')" title="View image">🖼️</button>` : '';
+        };
+
+        el.innerHTML=`
+          <div class="info-card">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="type-badge ${s.type==='State'?'badge-state':'badge-ut'}">${s.type}</span>
+              <span class="badge-zone" style="background:${zoneColor}20;color:${zoneColor}">${s.zone} Zone</span>
+            </div>
+            <h2 class="text-base sm:text-lg font-bold mt-2" style="color:var(--text-heading)">${s.name}</h2>
+
+            <!-- Tab bar -->
+            <div class="tab-bar mt-3 mb-3" id="info-tabs">
+              <button class="tab-item active" onclick="App.showInfoTab('basic')">📋 Basic</button>
+              <button class="tab-item" onclick="App.showInfoTab('nature')">🌿 Nature</button>
+              <button class="tab-item" onclick="App.showInfoTab('more')">✨ More</button>
+            </div>
+
+            <div id="info-tab-basic">
+              <div class="info-row"><span class="info-row-icon">🏛️</span><div><div class="info-row-label">Capital</div><div class="info-row-value">${s.capital}</div></div></div>
+              <div class="info-row"><span class="info-row-icon">🗣️</span><div><div class="info-row-label">Language</div><div class="info-row-value">${s.language||'—'}</div></div></div>
+              <div class="info-row"><span class="info-row-icon">📐</span><div><div class="info-row-label">Area</div><div class="info-row-value">${s.area?s.area.toLocaleString()+' km²':'—'}</div></div></div>
+              <div class="info-row"><span class="info-row-icon">👥</span><div><div class="info-row-label">Population</div><div class="info-row-value">${s.population?s.population.toLocaleString():'—'}</div></div></div>
+              <div class="info-row"><span class="info-row-icon">📖</span><div><div class="info-row-label">Literacy</div><div class="info-row-value">${s.literacy?s.literacy+'%':'—'}</div></div></div>
+            </div>
+
+            <div id="info-tab-nature" class="hidden">
+              <div class="info-row">
+                <span class="info-row-icon">🐾</span>
+                <div style="flex:1"><div class="info-row-label">State Animal</div><div class="info-row-value">${s.animal||'—'}</div></div>
+                ${imgBtn(s.animal, 'State Animal')}
+              </div>
+              <div class="info-row">
+                <span class="info-row-icon">🐦</span>
+                <div style="flex:1"><div class="info-row-label">State Bird</div><div class="info-row-value">${s.bird||'—'}</div></div>
+                ${imgBtn(s.bird, 'State Bird')}
+              </div>
+              <div class="info-row">
+                <span class="info-row-icon">🌺</span>
+                <div style="flex:1"><div class="info-row-label">State Flower</div><div class="info-row-value">${s.flower||'—'}</div></div>
+                ${imgBtn(s.flower, 'State Flower')}
+              </div>
+              <div class="info-row">
+                <span class="info-row-icon">🏞️</span>
+                <div style="flex:1"><div class="info-row-label">Major River(s)</div><div class="info-row-value">${s.river||'—'}</div></div>
+                ${imgBtn(s.river, 'River')}
+              </div>
+            </div>
+
+            <div id="info-tab-more" class="hidden">
+              <div class="info-row"><span class="info-row-icon">🏛️</span><div><div class="info-row-label">Landmarks</div><div class="info-row-value">${(s.landmarks||[]).join(', ')||'—'}</div></div></div>
+              ${s.funFact?`<div class="fun-fact mt-2">💡 <strong>Fun Fact:</strong> ${s.funFact}</div>`:''}
+              ${neighborsHTML?`<div class="mt-3"><div class="info-row-label mb-2">🤝 Neighbors</div><div class="flex flex-wrap gap-1">${neighborsHTML}</div></div>`:''}
+            </div>
+          </div>`;
+      }
+
+      function showInfoTab(tab) {
+        ['basic','nature','more'].forEach(t=>{
+          const el=$(`#info-tab-${t}`);if(el)el.classList.toggle('hidden',t!==tab);
+        });
+        $$('#info-tabs .tab-item').forEach((btn,i)=>{
+          const tabs=['basic','nature','more'];
+          btn.classList.toggle('active',tabs[i]===tab);
+        });
+      }
+
+      // ═══════ SEARCH ═══════
+      let searchOpen=false;
+      function onSearchFocus(){$('#search-results').classList.add('open');searchOpen=true;}
+      function onSearch(val){renderSearchList(val);$('#search-results').classList.add('open');}
+      function renderSearchList(query){
+        const q=query.toLowerCase().trim();
+        const list=STATES.filter(s=>{if(!q)return true;
+          return s.name.toLowerCase().includes(q)||s.capital.toLowerCase().includes(q)||(s.language||'').toLowerCase().includes(q)||(s.river||'').toLowerCase().includes(q)||(s.landmarks||[]).some(l=>l.toLowerCase().includes(q));
+        });
+        $('#search-results').innerHTML=list.map(s=>`<div class="state-list-item${ST.selected===s.id?' active':''}" data-id="${s.id}" onclick="App.selectFromList('${s.id}')"><span class="dot ${s.type==='State'?'dot-state':'dot-ut'}"></span><span style="flex:1">${s.name}</span><span style="font-size:0.6rem;color:var(--text-muted)">${s.type==='State'?'S':'UT'}</span></div>`).join('');
+      }
+      function selectFromList(id){const s=M[id];if(!s)return;$('#search-input').value='';learnSelect(id,s);}
+      document.addEventListener('click',e=>{if(searchOpen&&!e.target.closest('.search-wrap')&&!e.target.closest('#search-results')){$('#search-results').classList.remove('open');searchOpen=false;}});
+
+      // ═══════ QUIZ ENGINE ═══════
+      function setDifficulty(d){ST.difficulty=d;$$('#diff-selector .difficulty-btn').forEach(b=>b.classList.toggle('selected',b.dataset.diff===d));}
+      function setQCount(n){ST.qCount=n;$$('#count-selector .difficulty-btn').forEach(b=>b.classList.toggle('selected',parseInt(b.dataset.count)===n));}
+
+      function startQuiz(){
+        if(ST.matchedIds.size===0){alert('Load the map SVG first!');return;}
+        const diff=CFG.DIFFICULTIES[ST.difficulty];
+        const q=ST.quiz;
+        q.idx=0;q.score=0;q.history=[];q.answered=false;q.streak=0;q.bestStreak=0;
+        ST.hintsLeft=diff.hints;
+        q.questions=genQuestions(diff);
+        if(!q.questions.length)return;
+        q.active=true;resetHL();
+        $('#quiz-start').classList.add('hidden');$('#quiz-results').classList.add('hidden');$('#quiz-active').classList.remove('hidden');
+        $('#q-total').textContent=q.questions.length;
+        updateHintBtn();renderDots();nextQ(diff);
+      }
+
+      function genQuestions(diff){
+        const pool=STATES.filter(s=>ST.matchedIds.has(s.id));
+        if(!pool.length){alert('No matched regions.');return[];}
+        const qs=[],used=new Set(),usedSpec=new Set();
+        const maxQ=Math.min(ST.qCount,pool.length);
+        const types=diff.types;
+
+        const gens={
+          name:()=>{const a=pool.filter(s=>!used.has(s.id));if(!a.length)return null;const s=a[~~(Math.random()*a.length)];used.add(s.id);
+            const t=[`Find <strong>${s.name}</strong> on the map`,`Click on <strong>${s.name}</strong>`,`Locate <strong>${s.name}</strong>`,`Where is <strong>${s.name}</strong>?`];
+            return{html:t[~~(Math.random()*t.length)],ans:[s.id],disp:s.name,hint:`Zone: ${s.zone}`};},
+
+          capital:()=>{for(const[k,d]of Object.entries(SHARED_CAP)){const av=d.a.filter(i=>ST.matchedIds.has(i)&&!used.has(i));
+            if(av.length&&!usedSpec.has('sc_'+k)){usedSpec.add('sc_'+k);av.forEach(i=>used.add(i));return{html:d.q,ans:av,disp:av.map(i=>M[i]?.name).join(' or '),hint:'Shared capital'};}}
+            const a=pool.filter(s=>!used.has(s.id));if(!a.length)return null;const s=a[~~(Math.random()*a.length)];used.add(s.id);
+            return{html:`Which state/UT has capital <strong>${s.capital}</strong>?`,ans:[s.id],disp:s.name,hint:`Zone: ${s.zone}`};},
+
+          sea:()=>{for(const[k,d]of Object.entries(SEA)){if(usedSpec.has('sea_'+k))continue;const av=d.a.filter(i=>ST.matchedIds.has(i));
+            if(av.length){usedSpec.add('sea_'+k);return{html:d.q,ans:av,disp:av.map(i=>M[i]?.name).slice(0,3).join(', ')+(av.length>3?'…':''),hint:'Look at the coastline'};}}return null;},
+
+          country:()=>{const keys=Object.keys(COUNTRY).sort(()=>Math.random()-0.5);for(const k of keys){if(usedSpec.has('cb_'+k))continue;const d=COUNTRY[k];
+            const av=d.a.filter(i=>ST.matchedIds.has(i));if(av.length){usedSpec.add('cb_'+k);return{html:d.q,ans:av,disp:av.map(i=>M[i]?.name).slice(0,3).join(', ')+(av.length>3?'…':''),hint:'Look at the borders'};}}return null;},
+
+          neighbor:()=>{const a=pool.filter(s=>!used.has(s.id)&&s.neighbors?.length>0);if(!a.length)return null;
+            const s=a[~~(Math.random()*a.length)];const nb=s.neighbors.filter(n=>ST.matchedIds.has(n));
+            if(!nb.length)return null;const target=nb[~~(Math.random()*nb.length)];const tgt=M[target];
+            used.add(target);return{html:`Which state/UT neighbors <strong>${s.name}</strong>?`,ans:nb,disp:tgt.name,hint:`${s.zone} zone`};},
+
+          river:()=>{const withRiver=pool.filter(s=>s.river&&s.river!=='—'&&!used.has(s.id));if(!withRiver.length)return null;
+            const s=withRiver[~~(Math.random()*withRiver.length)];const rivers=s.river.split(',').map(r=>r.trim());
+            const river=rivers[~~(Math.random()*rivers.length)];
+            const allWithRiver=pool.filter(x=>x.river?.includes(river)).map(x=>x.id);
+            used.add(s.id);return{html:`Which state does the <strong>${river}</strong> river flow through?`,ans:allWithRiver,disp:s.name,hint:`Major river in ${s.zone}`};},
+
+          language:()=>{const a=pool.filter(s=>s.language&&!used.has(s.id));if(!a.length)return null;
+            const s=a[~~(Math.random()*a.length)];const lang=s.language.split(',')[0].trim();
+            const allWithLang=pool.filter(x=>x.language?.includes(lang)).map(x=>x.id);
+            used.add(s.id);return{html:`Which state has <strong>${lang}</strong> as its language?`,ans:allWithLang,disp:s.name,hint:`Think about ${lang}-speaking regions`};},
+
+          landmark:()=>{const a=pool.filter(s=>s.landmarks?.length&&!used.has(s.id));if(!a.length)return null;
+            const s=a[~~(Math.random()*a.length)];const lm=s.landmarks[~~(Math.random()*s.landmarks.length)];
+            used.add(s.id);return{html:`<strong>${lm}</strong> is located in which state/UT?`,ans:[s.id],disp:s.name,hint:`${s.zone} zone`};},
+
+          zone:()=>{const zones=Object.keys(ZONE_COLORS);const zone=zones[~~(Math.random()*zones.length)];
+            if(usedSpec.has('zone_'+zone))return null;usedSpec.add('zone_'+zone);
+            const inZone=pool.filter(s=>s.zone===zone).map(s=>s.id);if(!inZone.length)return null;
+            return{html:`Click any state/UT in the <strong>${zone}</strong> zone`,ans:inZone,disp:inZone.map(i=>M[i]?.name).slice(0,3).join(', ')+'…',hint:`${zone} India`};},
+
+          symbol:()=>{const a=pool.filter(s=>s.animal&&s.animal!=='—'&&!used.has(s.id));if(!a.length)return null;
+            const s=a[~~(Math.random()*a.length)];used.add(s.id);
+            return{html:`<strong>${s.animal}</strong> is the state animal of?`,ans:[s.id],disp:s.name,hint:`Zone: ${s.zone}`};},
+
+          area:()=>{if(usedSpec.has('area'))return null;usedSpec.add('area');
+            const sorted=[...pool].sort((a,b)=>b.area-a.area);const largest=sorted[0];
+            return{html:`Which is the <strong>largest state</strong> by area?`,ans:[largest.id],disp:largest.name,hint:`${largest.area.toLocaleString()} km²`};},
+
+          population:()=>{if(usedSpec.has('pop'))return null;usedSpec.add('pop');
+            const sorted=[...pool].sort((a,b)=>b.population-a.population);const most=sorted[0];
+            return{html:`Which is the <strong>most populated</strong> state?`,ans:[most.id],disp:most.name,hint:`Over ${Math.round(most.population/1000000)}M people`};},
+
+          literacy:()=>{if(usedSpec.has('lit'))return null;usedSpec.add('lit');
+            const sorted=[...pool].filter(s=>s.literacy).sort((a,b)=>b.literacy-a.literacy);
+            if(!sorted.length)return null;const top=sorted[0];
+            return{html:`Which state has the <strong>highest literacy rate</strong>?`,ans:[top.id],disp:`${top.name} (${top.literacy}%)`,hint:'Known for education'};},
+        };
+
+        let att=0;
+        while(qs.length<maxQ&&att<80){att++;
+          const type=types[~~(Math.random()*types.length)];
+          const gen=gens[type];if(!gen)continue;
+          const q=gen();if(q)qs.push(q);
+        }
+        while(qs.length<maxQ){const q=gens.name();if(q)qs.push(q);else break;}
+        return qs.sort(()=>Math.random()-0.5);
+      }
+
+      function nextQ(diff){
+        diff=diff||CFG.DIFFICULTIES[ST.difficulty];
+        const q=ST.quiz;q.answered=false;q.timeLeft=diff.timer;
+        resetHL();hideFB();$('#quiz-streak').classList.add('hidden');$('#q-hint').classList.add('hidden');
+        const cur=q.questions[q.idx];
+        $('#q-num').textContent=q.idx+1;$('#q-text').innerHTML=cur.html;
+        updScore();setDot(q.idx,'current');startTimer(diff);updateHintBtn();
+      }
+
+      function quizAnswer(id,s){
+        const q=ST.quiz,cur=q.questions[q.idx];
+        q.answered=true;clearInterval(q.timer);
+        const ok=cur.ans.includes(id);const time=CFG.DIFFICULTIES[ST.difficulty].timer-q.timeLeft;
+        q.history.push({q:cur,click:id,ok,time});
+
+        if(ok){
+          q.score++;q.streak++;if(q.streak>q.bestStreak)q.bestStreak=q.streak;
+          hl(id,'correct');showFB(true,`Correct! That's ${s.name}${time<=2?' ⚡ Speed bonus!':''}`);setDot(q.idx,'correct');
+          if(q.streak>=3){$('#quiz-streak').classList.remove('hidden');$('#quiz-streak-count').textContent=q.streak;}
+          ST.stats.stateMastery[id]=(ST.stats.stateMastery[id]||0)+1;
+        } else {
+          q.streak=0;hl(id,'wrong');cur.ans.forEach(c=>hl(c,'correct'));
+          showFB(false,`Wrong! You clicked ${s.name}. Answer: ${cur.disp}`);setDot(q.idx,'wrong');
+          $('#quiz-streak').classList.add('hidden');
+        }
+        updScore();schedNext();
+      }
+
+      function handleTimeout(){const q=ST.quiz;if(q.answered)return;q.answered=true;q.streak=0;
+        const cur=q.questions[q.idx];q.history.push({q:cur,click:null,ok:false,time:CFG.DIFFICULTIES[ST.difficulty].timer});
+        cur.ans.forEach(c=>hl(c,'correct'));showFB(false,`Time's up! Answer: ${cur.disp}`);setDot(q.idx,'wrong');
+        $('#quiz-streak').classList.add('hidden');schedNext();}
+
+      function schedNext(){setTimeout(()=>{if(ST.quiz.idx<ST.quiz.questions.length-1){ST.quiz.idx++;nextQ();}else finishQuiz();},CFG.FEEDBACK_MS);}
+
+      function useHint(){
+        if(ST.hintsLeft<=0||ST.quiz.answered)return;
+        ST.hintsLeft--;updateHintBtn();
+        const cur=ST.quiz.questions[ST.quiz.idx];
+        if(cur.hint){$('#q-hint').textContent='💡 '+cur.hint;$('#q-hint').classList.remove('hidden');}
+        cur.ans.slice(0,2).forEach(id=>{
+          const el=document.getElementById(id);if(el)el.classList.add('hint-glow');
+          const m=document.getElementById(id+'_marker');if(m)m.classList.add('hint-glow');
+          setTimeout(()=>{if(el)el.classList.remove('hint-glow');if(m)m.classList.remove('hint-glow');},2500);
+        });
+      }
+
+      function updateHintBtn(){const b=$('#hint-btn');if(!b)return;b.textContent=`💡 ${ST.hintsLeft}`;b.disabled=ST.hintsLeft<=0;
+        b.classList.toggle('hidden',CFG.DIFFICULTIES[ST.difficulty].hints===0);}
+
+      function finishQuiz(){
+        const q=ST.quiz;q.active=false;clearInterval(q.timer);resetHL();
+        const s=ST.stats;s.quizzes++;s.totalCorrect+=q.score;
+        if(q.score>s.bestScore)s.bestScore=q.score;
+        if(q.bestStreak>s.bestStreak)s.bestStreak=q.bestStreak;
+        s.history.push({score:q.score,total:q.questions.length,diff:ST.difficulty,date:Date.now()});
+        saveStats();
+
+                const prevUnlocked=new Set(ACHIEVEMENTS.filter(a=>a.check(s,null)).map(a=>a.id));
+        const newlyUnlocked=ACHIEVEMENTS.filter(a=>a.check(s,q.history)&&!prevUnlocked.has(a.id));
+
+        $('#quiz-active').classList.add('hidden');$('#quiz-results').classList.remove('hidden');
+        $('#res-score').textContent=q.score;$('#res-total').textContent='/'+q.questions.length;
+
+        const avgTime=q.history.length?Math.round(q.history.reduce((a,h)=>a+h.time,0)/q.history.length*10)/10:0;
+        $('#res-time').textContent=avgTime+'s';
+        $('#res-streak').textContent=q.bestStreak;
+        $('#res-accuracy').textContent=Math.round(q.score/q.questions.length*100)+'%';
+
+        let e,t,su;const pct=q.score/q.questions.length;
+        if(pct===1){e='🏆';t='Perfect!';su='Flawless victory!';}
+        else if(pct>=0.8){e='🌟';t='Excellent!';su='You know India well!';}
+        else if(pct>=0.6){e='👍';t='Good Job!';su='Keep practicing!';}
+        else if(pct>=0.4){e='📚';t='Keep Learning!';su='Try learn mode.';}
+        else{e='💪';t="Don't Give Up!";su='Practice makes perfect!';}
+        $('#res-emoji').textContent=e;$('#res-title').textContent=t;$('#res-subtitle').textContent=su;
+
+        renderBreakdown();
+
+        if(newlyUnlocked.length){
+          const nel=$('#new-achievements');nel.classList.remove('hidden');
+          nel.innerHTML=`<p class="text-xs font-semibold mb-2" style="color:var(--gold)">🎉 NEW ACHIEVEMENTS!</p>`+
+            newlyUnlocked.map(a=>`<div class="achievement unlocked anim-fade-in"><span class="achievement-icon">${a.icon}</span><div><div class="achievement-name">${a.name}</div><div class="achievement-desc">${a.desc}</div></div></div>`).join('');
+        } else { $('#new-achievements').classList.add('hidden'); }
+
+        if(pct>=0.8)confetti();
+
+        if(s.bestStreak>=3){$('#streak-display').classList.remove('hidden');$('#streak-display').textContent='🔥 '+s.bestStreak;}
+      }
+
+      function endQuiz(){ST.quiz.active=false;clearInterval(ST.quiz.timer);resetHL();}
+
+      // ═══════ TIMER ═══════
+      function startTimer(diff){diff=diff||CFG.DIFFICULTIES[ST.difficulty];const q=ST.quiz;q.timeLeft=diff.timer;updTimerUI(diff);
+        q.timer=setInterval(()=>{q.timeLeft--;updTimerUI(diff);if(q.timeLeft<=0){clearInterval(q.timer);handleTimeout();}},1000);}
+      function updTimerUI(diff){diff=diff||CFG.DIFFICULTIES[ST.difficulty];const t=ST.quiz.timeLeft,pct=(t/diff.timer)*100,bar=$('#timer-bar');
+        bar.style.width=pct+'%';bar.style.backgroundColor=t>diff.timer*0.5?'var(--success)':t>diff.timer*0.3?'var(--warning)':'var(--danger)';
+        $('#timer-text').textContent=t;$('#timer-text').style.color=t<=3?'var(--danger)':'var(--text-heading)';}
+
+      // ═══════ MAP HELPERS ═══════
+      function hl(id,cls){const el=document.getElementById(id);if(el)el.classList.add(cls);const m=document.getElementById(id+'_marker');if(m)m.classList.add(cls);}
+      function resetHL(){$$('.geo-path').forEach(e=>e.classList.remove('selected','correct','wrong','dimmed','hovered','hint-glow'));$$('.geo-marker').forEach(e=>e.classList.remove('selected','correct','wrong','dimmed','hovered','hint-glow'));}
+
+      // ═══════ TOOLTIP ═══════
+      function tipShow(id,e){const s=M[id];if(!s)return;const tip=$('#tooltip');
+        tip.textContent=(ST.mode==='quiz'&&ST.quiz.active)?'?':s.name;tip.classList.add('visible');tipMove(e);
+        if(ST.mode==='learn'){const o=$('#map-overlay');o.classList.remove('hidden');$('#overlay-text').textContent=s.name;$('#overlay-sub').textContent=s.capital+' · '+s.zone;}}
+      function tipMove(e){$('#tooltip').style.left=(e.clientX+15)+'px';$('#tooltip').style.top=(e.clientY-35)+'px';}
+      function tipHide(){$('#tooltip').classList.remove('visible');$('#map-overlay').classList.add('hidden');}
+
+      // ═══════ QUIZ UI ═══════
+      function updScore(){$('#q-score').textContent=ST.quiz.score;}
+      function showFB(ok,msg){const f=$('#quiz-feedback');f.classList.remove('hidden');f.className=`feedback-card anim-fade-in ${ok?'feedback-correct':'feedback-wrong'}`;f.innerHTML=`<span>${ok?'✅':'❌'}</span> ${msg}`;}
+      function hideFB(){$('#quiz-feedback').className='hidden feedback-card';}
+      function renderDots(){const c=$('#progress-dots');c.innerHTML='';for(let i=0;i<ST.quiz.questions.length;i++){const d=document.createElement('span');d.className='progress-dot';d.id='dot-'+i;c.appendChild(d);}}
+      function setDot(i,st){const d=document.getElementById('dot-'+i);if(d)d.className='progress-dot dot-'+st;}
+      function renderBreakdown(){$('#results-breakdown').innerHTML=ST.quiz.history.map((h,i)=>`<div class="result-item"><span class="result-num">${i+1}</span><span class="result-name">${h.q.disp}</span><span class="result-time">${h.click===null?'⏰':h.time+'s'}</span><span>${h.ok?'✅':'❌'}</span></div>`).join('');}
+
+      // ═══════ STATS PANEL ═══════
+      function renderStats(){
+        const s=ST.stats;
+        $('#total-quizzes').textContent=s.quizzes;
+        $('#total-correct').textContent=s.totalCorrect;
+        $('#best-score').textContent=s.bestScore;
+        $('#best-streak-stat').textContent=s.bestStreak;
+
+        const mastered=Object.values(s.stateMastery).filter(v=>v>=3).length;
+        const pct=Math.round(mastered/STATES.length*100);
+        $('#mastery-fill').style.width=pct+'%';
+        $('#mastery-count').textContent=`${mastered}/${STATES.length} mastered`;
+        $('#mastery-pct').textContent=pct+'%';
+
+        $('#achievements-list').innerHTML=ACHIEVEMENTS.map(a=>{const u=a.check(s,ST.quiz.history);
+          return`<div class="achievement ${u?'unlocked':'locked'}"><span class="achievement-icon">${a.icon}</span><div><div class="achievement-name">${a.name}</div><div class="achievement-desc">${a.desc}</div></div>${u?'<span style="color:var(--gold);font-size:0.7rem;font-weight:700">✓</span>':''}</div>`;}).join('');
+
+        const weak=STATES.filter(s=>!ST.stats.stateMastery[s.id]||ST.stats.stateMastery[s.id]<2)
+          .sort((a,b)=>(ST.stats.stateMastery[a.id]||0)-(ST.stats.stateMastery[b.id]||0)).slice(0,5);
+        $('#weak-states').innerHTML=weak.map(s=>`<div class="state-list-item" onclick="App.switchMode('learn');App.selectFromList('${s.id}')"><span class="dot ${s.type==='State'?'dot-state':'dot-ut'}"></span><span style="flex:1">${s.name}</span><span style="font-size:0.6rem;color:var(--text-muted)">${ST.stats.stateMastery[s.id]||0}/3</span></div>`).join('');
+      }
+
+      // ═══════ PERSISTENCE ═══════
+      function loadStats(){try{const d=JSON.parse(localStorage.getItem(CFG.STATS_KEY));if(d)ST.stats=d;}catch(e){}}
+      function saveStats(){try{localStorage.setItem(CFG.STATS_KEY,JSON.stringify(ST.stats));}catch(e){}}
+      function clearStats(){ST.stats={quizzes:0,totalCorrect:0,bestScore:0,bestStreak:0,stateMastery:{},history:[]};saveStats();renderStats();$('#streak-display').classList.add('hidden');}
+
+      // ═══════ MODE SWITCH ═══════
+      function switchMode(mode){
+        if(ST.quiz.active&&mode!=='quiz'){if(!confirm('End current quiz?'))return;endQuiz();}
+        ST.mode=mode;resetHL();
+        ['learn','quiz','stats'].forEach(m=>{$(`#btn-${m}`).classList.toggle('active',m===mode);$(`#${m}-panel`).classList.toggle('hidden',m!==mode);});
+        if(mode==='learn'){$('#learn-placeholder').classList.remove('hidden');$('#state-info').classList.add('hidden');ST.selected=null;$('#search-input').value='';renderSearchList('');}
+        if(mode==='quiz'){$('#quiz-start').classList.remove('hidden');$('#quiz-active').classList.add('hidden');$('#quiz-results').classList.add('hidden');}
+        if(mode==='stats')renderStats();
+      }
+
+      // ═══════ ZOOM ═══════
+      function zoomIn(){ST.zoom=Math.min(ST.zoom+0.3,4);applyZoom();}
+      function zoomOut(){ST.zoom=Math.max(ST.zoom-0.3,0.5);applyZoom();}
+      function resetZoom(){ST.zoom=1;applyZoom();}
+      function applyZoom(){const svg=$('#map-container svg');if(svg)svg.style.transform=`scale(${ST.zoom})`;}
+
+      // ═══════ DARK ═══════
+      function toggleDark(){ST.dark=!ST.dark;document.documentElement.classList.toggle('dark',ST.dark);$('#dark-btn').textContent=ST.dark?'☀️':'🌙';localStorage.setItem(CFG.DARK_KEY,ST.dark);}
+
+      // ═══════ CONFETTI ═══════
+      function confetti(){const cols=['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899'];for(let i=0;i<40;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.left=Math.random()*100+'vw';el.style.backgroundColor=cols[~~(Math.random()*cols.length)];el.style.animationDuration=(Math.random()*2+1.5)+'s';el.style.animationDelay=Math.random()*0.8+'s';el.style.width=(Math.random()*8+6)+'px';el.style.height=(Math.random()*8+6)+'px';el.style.borderRadius=Math.random()>0.5?'50%':'2px';document.body.appendChild(el);setTimeout(()=>el.remove(),4000);}}
+
+      // ═══════ KEYBOARD ═══════
+      function onKey(e){
+        if(e.key==='Escape'){
+          if($('#image-modal').classList.contains('active')){
+            closeImageModal();
+            return;
+          }
+          if(ST.quiz.active){if(confirm('End quiz?')){endQuiz();switchMode('learn');}}
+        }
+        if(e.key==='d'&&(e.ctrlKey||e.metaKey)){e.preventDefault();toggleDark();}
+        if(e.key==='/'&&!e.ctrlKey&&ST.mode==='learn'){e.preventDefault();$('#search-input').focus();}
+      }
+
+      // ═══════ BOOT ═══════
+      document.addEventListener('DOMContentLoaded',init);
+
+      return{
+        switchMode,
+        startQuiz,
+        toggleDark,
+        zoomIn,
+        zoomOut,
+        resetZoom,
+        onSearch,
+        onSearchFocus,
+        selectFromList,
+        setDifficulty,
+        setQCount,
+        useHint,
+        showInfoTab,
+        clearStats,
+        showImageModal,
+        closeImageModal
+      };
+    })();
+  </script>
+</body>
+</html>
