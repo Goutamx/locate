@@ -271,7 +271,7 @@
       stroke: var(--map-marker-stroke) !important;
       stroke-width: 2px !important;
       cursor: pointer;
-      pointer-events: auto !important;
+      pointer-events: none !important; /* Let hit area handle clicks */
     }
     .geo-marker:hover {
       fill: var(--map-hover) !important;
@@ -300,6 +300,12 @@
       stroke: none !important;
       cursor: pointer;
       pointer-events: all !important;
+    }
+    .geo-marker-hitarea:hover + .geo-marker {
+      fill: var(--map-hover) !important;
+      stroke: var(--accent) !important;
+      stroke-width: 3px !important;
+      filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
     }
 
     /* ======== SIDEBAR ======== */
@@ -1095,7 +1101,6 @@
   </g>
 </svg>
 
-
           </div>
         </div>
         <!-- Zoom Controls -->
@@ -1196,7 +1201,8 @@
         TIMER: 10,
         FEEDBACK_MS: 1800,
         DARK_STORAGE: 'india-geo-dark',
-        MARKER_HIT_EXTRA: 20, // Extra radius for touch area (in pixels)
+        MARKER_HIT_EXTRA: 20,
+        SMALL_PATH_THRESHOLD: 50,
       };
 
       // ─── EMBEDDED STATE DATA ─────────────────────────────
@@ -1240,8 +1246,6 @@
       ];
 
       // ─── SPECIAL QUESTION DATA ───────────────────────────
-      
-      // Sea/Ocean boundaries - multiple correct answers
       const SEA_BOUNDARIES = {
         arabian_sea: {
           question: "Which state/UT touches the <strong>Arabian Sea</strong>?",
@@ -1257,7 +1261,6 @@
         }
       };
 
-      // Country borders - multiple correct answers
       const COUNTRY_BORDERS = {
         china: {
           question: "Which state/UT shares a border with <strong>China</strong>?",
@@ -1285,7 +1288,7 @@
         },
         three_countries: {
           question: "Which state shares borders with <strong>three countries</strong>?",
-          answers: ["sikkim"] // Nepal, Bhutan, China
+          answers: ["sikkim"]
         },
         two_countries: {
           question: "Which state shares borders with <strong>two countries</strong>?",
@@ -1293,7 +1296,6 @@
         }
       };
 
-      // Shared capitals - multiple correct answers
       const SHARED_CAPITALS = {
         chandigarh: {
           question: "Which state has <strong>Chandigarh</strong> as its capital?",
@@ -1355,6 +1357,7 @@
         map: {},
         svgIdMap: {},
         markerMap: {},
+        hitAreaMap: {},
         matchedIds: new Set(),
         selected: null,
         dark: false,
@@ -1390,7 +1393,7 @@
           try {
             const r = await fetch('state_data.json');
             if (r.ok) { console.log('✅ Loaded state_data.json'); return await r.json(); }
-          } catch(e) { /* silent fallback */ }
+          } catch(e) {}
         }
         console.log('📦 Using embedded state data');
         return [...STATES_DATA];
@@ -1399,31 +1402,95 @@
       // ─── SMART ID RESOLVER ───────────────────────────────
       function resolveId(svgId) {
         if (!svgId) return null;
-        
         let baseId = svgId;
-        if (svgId.endsWith('_marker')) {
-          baseId = svgId.replace('_marker', '');
-        }
-        
+        if (svgId.endsWith('_marker')) baseId = svgId.replace('_marker', '');
         if (state.map[baseId]) return baseId;
         if (ID_ALIASES[baseId]) return ID_ALIASES[baseId];
-        
-        const norm = baseId.toLowerCase().trim()
-          .replace(/[\s-]+/g, '_')
-          .replace(/[^a-z0-9_]/g, '')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '');
+        const norm = baseId.toLowerCase().trim().replace(/[\s-]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
         if (state.map[norm]) return norm;
         if (ID_ALIASES[norm]) return ID_ALIASES[norm];
-        
         const stripped = norm.replace(/^(in_|state_|ut_|india_)/, '');
         if (state.map[stripped]) return stripped;
         if (ID_ALIASES[stripped]) return ID_ALIASES[stripped];
-        
         const upper = baseId.toUpperCase();
         if (ID_ALIASES[upper]) return ID_ALIASES[upper];
-        
         return null;
+      }
+
+      // ─── CREATE HIT AREA HELPER ──────────────────────────
+      function createHitArea(el, canonicalId, isMarker) {
+        const tagName = el.tagName.toLowerCase();
+        let hitTarget = null;
+        
+        if (tagName === 'circle') {
+          const cx = el.getAttribute('cx');
+          const cy = el.getAttribute('cy');
+          const r = parseFloat(el.getAttribute('r')) || 5;
+          
+          hitTarget = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          hitTarget.setAttribute('cx', cx);
+          hitTarget.setAttribute('cy', cy);
+          hitTarget.setAttribute('r', r + CFG.MARKER_HIT_EXTRA);
+        } else if (tagName === 'ellipse') {
+          const cx = el.getAttribute('cx');
+          const cy = el.getAttribute('cy');
+          const rx = parseFloat(el.getAttribute('rx')) || 5;
+          const ry = parseFloat(el.getAttribute('ry')) || 5;
+          
+          hitTarget = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+          hitTarget.setAttribute('cx', cx);
+          hitTarget.setAttribute('cy', cy);
+          hitTarget.setAttribute('rx', rx + CFG.MARKER_HIT_EXTRA);
+          hitTarget.setAttribute('ry', ry + CFG.MARKER_HIT_EXTRA);
+        } else if (tagName === 'path' || tagName === 'polygon' || tagName === 'polyline') {
+          try {
+            const bbox = el.getBBox();
+            const centerX = bbox.x + bbox.width / 2;
+            const centerY = bbox.y + bbox.height / 2;
+            const hitRadius = Math.max(bbox.width, bbox.height, 30) / 2 + CFG.MARKER_HIT_EXTRA;
+            
+            hitTarget = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            hitTarget.setAttribute('cx', centerX);
+            hitTarget.setAttribute('cy', centerY);
+            hitTarget.setAttribute('r', hitRadius);
+          } catch(e) {
+            return null;
+          }
+        }
+        
+        if (!hitTarget) return null;
+        
+        hitTarget.classList.add('geo-marker-hitarea');
+        hitTarget.setAttribute('data-state-id', canonicalId);
+        
+        // Insert BEFORE visible element (so element appears on top)
+        el.parentNode.insertBefore(hitTarget, el);
+        
+        // Attach ALL events to hit target
+        const handleClick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onStateClick(canonicalId, isMarker);
+        };
+        
+        hitTarget.addEventListener('click', handleClick);
+        hitTarget.addEventListener('touchstart', (e) => {
+          e.stopPropagation();
+        }, { passive: true });
+        hitTarget.addEventListener('touchend', handleClick);
+        hitTarget.addEventListener('mouseenter', (e) => {
+          tooltipShow(canonicalId, e);
+          // Also trigger hover style on visible element
+          el.classList.add('hover');
+        });
+        hitTarget.addEventListener('mousemove', (e) => tooltipMove(e));
+        hitTarget.addEventListener('mouseleave', () => {
+          tooltipHide();
+          el.classList.remove('hover');
+        });
+        
+        state.hitAreaMap[canonicalId] = hitTarget;
+        return hitTarget;
       }
 
       // ─── MAP INIT ────────────────────────────────────────
@@ -1441,6 +1508,7 @@
 
         let matched = 0;
         let markersFound = 0;
+        let smallPathsEnhanced = 0;
         const unmatchedSvg = [];
         const renamedPairs = [];
         const matchedDataIds = new Set();
@@ -1459,91 +1527,20 @@
 
           if (canonicalId && state.map[canonicalId]) {
             if (isMarker) {
+              // ──── MARKER ELEMENT ────
               state.markerMap[origId] = canonicalId;
               markersFound++;
               el.classList.add('geo-marker');
-              el.style.pointerEvents = 'auto';
               
-              // Create invisible larger hit area for easier tapping
-              if (tagName === 'circle') {
-                const cx = el.getAttribute('cx');
-                const cy = el.getAttribute('cy');
-                const r = parseFloat(el.getAttribute('r')) || 5;
-                
-                const hitTarget = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                hitTarget.setAttribute('cx', cx);
-                hitTarget.setAttribute('cy', cy);
-                hitTarget.setAttribute('r', r + CFG.MARKER_HIT_EXTRA); // Bigger radius for touch
-                hitTarget.classList.add('geo-marker-hitarea');
-                
-                // Insert BEFORE visible marker (so marker appears on top)
-                el.parentNode.insertBefore(hitTarget, el);
-                
-                // Attach events to hit target
-                hitTarget.addEventListener('click', (e) => {
-                  e.stopPropagation();
-                  onStateClick(canonicalId, true);
-                });
-                hitTarget.addEventListener('touchend', (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onStateClick(canonicalId, true);
-                });
-                hitTarget.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
-                hitTarget.addEventListener('mousemove', (e) => tooltipMove(e));
-                hitTarget.addEventListener('mouseleave', tooltipHide);
-                
-                // Also attach events to visible marker for desktop hover effects
-                el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
-                el.addEventListener('mousemove', (e) => tooltipMove(e));
-                el.addEventListener('mouseleave', tooltipHide);
-              } else if (tagName === 'ellipse') {
-                const cx = el.getAttribute('cx');
-                const cy = el.getAttribute('cy');
-                const rx = parseFloat(el.getAttribute('rx')) || 5;
-                const ry = parseFloat(el.getAttribute('ry')) || 5;
-                
-                const hitTarget = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-                hitTarget.setAttribute('cx', cx);
-                hitTarget.setAttribute('cy', cy);
-                hitTarget.setAttribute('rx', rx + CFG.MARKER_HIT_EXTRA);
-                hitTarget.setAttribute('ry', ry + CFG.MARKER_HIT_EXTRA);
-                hitTarget.classList.add('geo-marker-hitarea');
-                
-                el.parentNode.insertBefore(hitTarget, el);
-                
-                hitTarget.addEventListener('click', (e) => {
-                  e.stopPropagation();
-                  onStateClick(canonicalId, true);
-                });
-                hitTarget.addEventListener('touchend', (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onStateClick(canonicalId, true);
-                });
-                hitTarget.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
-                hitTarget.addEventListener('mousemove', (e) => tooltipMove(e));
-                hitTarget.addEventListener('mouseleave', tooltipHide);
-                
-                el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
-                el.addEventListener('mousemove', (e) => tooltipMove(e));
-                el.addEventListener('mouseleave', tooltipHide);
-              } else {
-                // For non-circle/ellipse markers, attach events directly
-                el.addEventListener('click', (e) => {
-                  e.stopPropagation();
-                  onStateClick(canonicalId, true);
-                });
-                el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
-                el.addEventListener('mousemove', (e) => tooltipMove(e));
-                el.addEventListener('mouseleave', tooltipHide);
-              }
+              // Create hit area for marker
+              createHitArea(el, canonicalId, true);
               
               if (!matchedDataIds.has(canonicalId)) {
                 matchedDataIds.add(canonicalId);
                 matched++;
               }
             } else {
+              // ──── REGULAR STATE PATH ────
               if (origId !== canonicalId) {
                 el.id = canonicalId;
                 renamedPairs.push([origId, canonicalId]);
@@ -1559,7 +1556,28 @@
               el.removeAttribute('style');
               el.classList.add('geo-path');
               
-              el.addEventListener('click', () => onStateClick(canonicalId, false));
+              // Check if path is very small and needs a hit area boost
+              let isSmallPath = false;
+              try {
+                const bbox = el.getBBox();
+                isSmallPath = (bbox.width < CFG.SMALL_PATH_THRESHOLD || bbox.height < CFG.SMALL_PATH_THRESHOLD);
+              } catch(e) {}
+              
+              if (isSmallPath) {
+                // Create hit area for small path
+                createHitArea(el, canonicalId, false);
+                smallPathsEnhanced++;
+                console.log(`   🎯 Enhanced hit area for small path: ${canonicalId}`);
+              } else {
+                // Normal path - attach events directly
+                el.addEventListener('click', () => onStateClick(canonicalId, false));
+                el.addEventListener('touchend', (e) => {
+                  e.preventDefault();
+                  onStateClick(canonicalId, false);
+                });
+              }
+              
+              // Tooltip events for all paths
               el.addEventListener('mouseenter', (e) => tooltipShow(canonicalId, e));
               el.addEventListener('mousemove', (e) => tooltipMove(e));
               el.addEventListener('mouseleave', tooltipHide);
@@ -1579,10 +1597,11 @@
 
         console.log(`%c🗺️ Map Binding Report`, 'font-size:13px;font-weight:bold;color:#3b82f6');
         console.log(`   ✅ Matched: ${matched}/${state.data.length} regions`);
-        console.log(`   🔵 Markers found: ${markersFound}`);
+        console.log(`   🔵 Markers: ${markersFound}`);
+        console.log(`   🎯 Small paths enhanced: ${smallPathsEnhanced}`);
         if (renamedPairs.length) console.log(`   🔄 Auto-renamed ${renamedPairs.length} IDs`);
-        if (unmatchedSvg.length) console.log(`   ❓ ${unmatchedSvg.length} SVG elements not matched:`, unmatchedSvg);
-        if (unmatchedData.length) console.log(`   ⚠️ ${unmatchedData.length} data entries have NO SVG element`);
+        if (unmatchedSvg.length) console.log(`   ❓ Unmatched SVG:`, unmatchedSvg);
+        if (unmatchedData.length) console.log(`   ⚠️ Missing from SVG:`, unmatchedData.map(s => s.name));
 
         if (unmatchedData.length > 5 || matched < 20) {
           showDiagnosticBanner(matched, unmatchedSvg, unmatchedData, renamedPairs, markersFound);
@@ -1625,18 +1644,21 @@
       function onStateClick(id, isMarker = false) {
         const s = state.map[id];
         if (!s) {
-          console.warn(`No data found for ID: ${id}`);
+          console.warn(`No data for ID: ${id}`);
           return;
         }
-        if (state.mode === 'learn') learnClick(id, s, isMarker);
-        else if (state.mode === 'quiz' && state.quiz.active && !state.quiz.answered) quizClick(id, s, isMarker);
+        if (state.mode === 'learn') {
+          learnClick(id, s, isMarker);
+        } else if (state.mode === 'quiz' && state.quiz.active && !state.quiz.answered) {
+          quizClick(id, s, isMarker);
+        }
       }
 
       // ─── LEARNING ────────────────────────────────────────
       function learnClick(id, s, isMarker) {
         resetHighlights();
         state.selected = id;
-        highlight(id, 'selected', isMarker);
+        highlight(id, 'selected');
         renderStateInfo(s);
       }
 
@@ -1699,7 +1721,6 @@
         const usedStates = new Set();
         const usedSpecialTypes = new Set();
 
-        // Question type generators
         const questionGenerators = [
           // Type 1: Find by name
           () => {
@@ -1721,13 +1742,10 @@
             };
           },
 
-          // Type 2: Find by capital (handles shared capitals)
+          // Type 2: Find by capital
           () => {
-            // Check for shared capital first
             for (const [key, data] of Object.entries(SHARED_CAPITALS)) {
-              const available = data.answers.filter(id => 
-                state.matchedIds.has(id) && !usedStates.has(id)
-              );
+              const available = data.answers.filter(id => state.matchedIds.has(id) && !usedStates.has(id));
               if (available.length > 0 && !usedSpecialTypes.has('shared_' + key)) {
                 usedSpecialTypes.add('shared_' + key);
                 available.forEach(id => usedStates.add(id));
@@ -1740,7 +1758,6 @@
               }
             }
             
-            // Regular capital question
             const available = quizzable.filter(s => !usedStates.has(s.id));
             if (available.length === 0) return null;
             const s = available[Math.floor(Math.random() * available.length)];
@@ -1758,7 +1775,7 @@
             };
           },
 
-          // Type 3: Sea boundary questions
+          // Type 3: Sea boundary
           () => {
             const seaKeys = Object.keys(SEA_BOUNDARIES);
             for (const key of seaKeys) {
@@ -1778,11 +1795,10 @@
             return null;
           },
 
-          // Type 4: Country border questions
+          // Type 4: Country border
           () => {
-            const countryKeys = Object.keys(COUNTRY_BORDERS);
-            const shuffled = countryKeys.sort(() => Math.random() - 0.5);
-            for (const key of shuffled) {
+            const countryKeys = Object.keys(COUNTRY_BORDERS).sort(() => Math.random() - 0.5);
+            for (const key of countryKeys) {
               if (usedSpecialTypes.has('country_' + key)) continue;
               const data = COUNTRY_BORDERS[key];
               const available = data.answers.filter(id => state.matchedIds.has(id));
@@ -1800,29 +1816,18 @@
           }
         ];
 
-        // Generate 10 questions with variety
         let attempts = 0;
         while (questions.length < CFG.MAX_Q && attempts < 50) {
           attempts++;
-          
-          // Weight towards variety
           let genIndex;
-          if (questions.length < 3) {
-            genIndex = Math.floor(Math.random() * 2); // Name or capital first
-          } else if (questions.length < 6) {
-            genIndex = Math.floor(Math.random() * 4); // Any type
-          } else {
-            genIndex = Math.floor(Math.random() * 2); // Back to basics
-          }
+          if (questions.length < 3) genIndex = Math.floor(Math.random() * 2);
+          else if (questions.length < 6) genIndex = Math.floor(Math.random() * 4);
+          else genIndex = Math.floor(Math.random() * 2);
           
-          const generator = questionGenerators[genIndex];
-          const q = generator();
-          if (q) {
-            questions.push(q);
-          }
+          const q = questionGenerators[genIndex]();
+          if (q) questions.push(q);
         }
 
-        // Shuffle questions
         return questions.sort(() => Math.random() - 0.5);
       }
 
@@ -1847,29 +1852,18 @@
         q.answered = true;
         clearInterval(q.timer);
 
-        // Check if clicked ID is in the correct answers array
         const correct = cur.correctAnswers.includes(id);
-        q.history.push({ 
-          question: cur, 
-          clickId: id, 
-          correct, 
-          time: CFG.TIMER - q.timeLeft 
-        });
+        q.history.push({ question: cur, clickId: id, correct, time: CFG.TIMER - q.timeLeft });
 
         if (correct) {
           q.score++;
-          highlight(id, 'correct', isMarker);
+          highlight(id, 'correct');
           showFeedback(true, `Correct! That's ${s.name}`);
           setDot(q.idx, 'correct');
         } else {
-          highlight(id, 'wrong', isMarker);
-          // Highlight all correct answers
-          cur.correctAnswers.forEach(correctId => {
-            const hasMarker = Object.values(state.markerMap).includes(correctId);
-            highlight(correctId, 'correct', hasMarker);
-          });
-          const clickedName = state.map[id]?.name || id;
-          showFeedback(false, `Wrong! You clicked ${clickedName}. Answer: ${cur.displayAnswer}`);
+          highlight(id, 'wrong');
+          cur.correctAnswers.forEach(cid => highlight(cid, 'correct'));
+          showFeedback(false, `Wrong! You clicked ${s.name}. Answer: ${cur.displayAnswer}`);
           setDot(q.idx, 'wrong');
         }
         updateScore();
@@ -1883,21 +1877,20 @@
         const cur = q.questions[q.idx];
         q.history.push({ question: cur, clickId: null, correct: false, time: CFG.TIMER });
 
-        // Highlight all correct answers
-        cur.correctAnswers.forEach(correctId => {
-          const hasMarker = Object.values(state.markerMap).includes(correctId);
-          highlight(correctId, 'correct', hasMarker);
-        });
+        cur.correctAnswers.forEach(cid => highlight(cid, 'correct'));
         showFeedback(false, `Time's up! Answer: ${cur.displayAnswer}`);
         setDot(q.idx, 'wrong');
         scheduleNext();
       }
 
       function scheduleNext() {
-        const q = state.quiz;
         setTimeout(() => {
-          if (q.idx < q.questions.length - 1) { q.idx++; nextQuestion(); }
-          else finishQuiz();
+          if (state.quiz.idx < state.quiz.questions.length - 1) {
+            state.quiz.idx++;
+            nextQuestion();
+          } else {
+            finishQuiz();
+          }
         }, CFG.FEEDBACK_MS);
       }
 
@@ -1913,10 +1906,10 @@
 
         let emoji, title, sub;
         if (q.score === CFG.MAX_Q) { emoji='🏆'; title='Geography Master!'; sub='Perfect score!'; }
-        else if (q.score >= 8)     { emoji='🌟'; title='Excellent!'; sub='You know India well!'; }
-        else if (q.score >= 6)     { emoji='👍'; title='Good Job!'; sub='Keep practicing!'; }
-        else if (q.score >= 4)     { emoji='📚'; title='Keep Learning!'; sub='Try learn mode.'; }
-        else                       { emoji='💪'; title="Don't Give Up!"; sub='Practice makes perfect!'; }
+        else if (q.score >= 8) { emoji='🌟'; title='Excellent!'; sub='You know India well!'; }
+        else if (q.score >= 6) { emoji='👍'; title='Good Job!'; sub='Keep practicing!'; }
+        else if (q.score >= 4) { emoji='📚'; title='Keep Learning!'; sub='Try learn mode.'; }
+        else { emoji='💪'; title="Don't Give Up!"; sub='Practice makes perfect!'; }
 
         $('#res-emoji').textContent = emoji;
         $('#res-title').textContent = title;
@@ -1955,14 +1948,17 @@
       }
 
       // ─── MAP HELPERS ─────────────────────────────────────
-      function highlight(id, cls, isMarker = false) {
+      function highlight(id, cls) {
+        // Highlight main element
         const el = document.getElementById(id);
         if (el) el.classList.add(cls);
         
+        // Highlight marker if exists
         const markerId = id + '_marker';
         const markerEl = document.getElementById(markerId);
         if (markerEl) markerEl.classList.add(cls);
         
+        // Check marker map
         for (const [mId, stateId] of Object.entries(state.markerMap)) {
           if (stateId === id) {
             const m = document.getElementById(mId);
@@ -1972,12 +1968,8 @@
       }
 
       function resetHighlights() {
-        $$('.geo-path').forEach(el => {
-          el.classList.remove('selected', 'correct', 'wrong', 'dimmed');
-        });
-        $$('.geo-marker').forEach(el => {
-          el.classList.remove('selected', 'correct', 'wrong', 'dimmed');
-        });
+        $$('.geo-path').forEach(el => el.classList.remove('selected', 'correct', 'wrong', 'dimmed', 'hover'));
+        $$('.geo-marker').forEach(el => el.classList.remove('selected', 'correct', 'wrong', 'dimmed', 'hover'));
       }
 
       // ─── TOOLTIP ─────────────────────────────────────────
@@ -2010,8 +2002,7 @@
       function renderDots() {
         const c = $('#progress-dots');
         c.innerHTML = '';
-        const count = state.quiz.questions.length;
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < state.quiz.questions.length; i++) {
           const d = document.createElement('span');
           d.className = 'progress-dot';
           d.id = 'dot-' + i;
@@ -2064,8 +2055,8 @@
       }
 
       // ─── ZOOM ────────────────────────────────────────────
-      function zoomIn()    { state.zoom = Math.min(state.zoom + 0.3, 4); applyZoom(); }
-      function zoomOut()   { state.zoom = Math.max(state.zoom - 0.3, 0.5); applyZoom(); }
+      function zoomIn() { state.zoom = Math.min(state.zoom + 0.3, 4); applyZoom(); }
+      function zoomOut() { state.zoom = Math.max(state.zoom - 0.3, 0.5); applyZoom(); }
       function resetZoom() { state.zoom = 1; applyZoom(); }
       function applyZoom() {
         const svg = $('#map-container svg');
@@ -2100,8 +2091,8 @@
 
       // ─── KEYBOARD ────────────────────────────────────────
       function onKey(e) {
-        if (e.key === 'Escape') {
-          if (state.quiz.active) { if (confirm('End quiz?')) { endQuiz(); switchMode('learn'); } }
+        if (e.key === 'Escape' && state.quiz.active) {
+          if (confirm('End quiz?')) { endQuiz(); switchMode('learn'); }
         }
         if (e.key === 'd' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); toggleDark(); }
       }
@@ -2110,10 +2101,7 @@
       document.addEventListener('DOMContentLoaded', init);
 
       // ─── PUBLIC API ──────────────────────────────────────
-      return {
-        switchMode, startQuiz, toggleDark,
-        zoomIn, zoomOut, resetZoom,
-      };
+      return { switchMode, startQuiz, toggleDark, zoomIn, zoomOut, resetZoom };
 
     })();
   </script>
